@@ -61,6 +61,8 @@ def parse_option():
     parser.add_argument('--ckpt', type=str, default='',
                         help='path to pre-trained model')
 
+    parser.add_argument('--seed', type=int, default=3, help='seed')
+    
     opt = parser.parse_args()
 
     # set the path according to the environment
@@ -230,6 +232,11 @@ def main():
     best_acc = 0
     opt = parse_option()
 
+    #set seeds for reprod.
+    torch.manual_seed(opt.seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
     # build data loader
     train_loader, val_loader = set_loader(opt)
 
