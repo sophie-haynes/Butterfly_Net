@@ -174,14 +174,19 @@ def set_model(opt):
     # enable synchronized Batch Normalization
     if opt.syncBN:
         model = apex.parallel.convert_syncbn_model(model)
-
+    # CUDA GPU Loading
     if torch.cuda.is_available():
         if torch.cuda.device_count() > 1:
             model = torch.nn.DataParallel(model)
         model = model.cuda()
         criterion = criterion.cuda()
         cudnn.benchmark = True
-
+    # Metal GPU Loading
+    elif torch.backends.mps.is_available():
+        mps_device = torch.device("mps")
+        model = model.to(mps_device)
+        criterion = criterion.to(mps_device)
+        
     return model, criterion
 
 
@@ -195,11 +200,22 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
     top1 = AverageMeter()
 
     end = time.time()
+    # check for metal GPU
+    if torch.backends.mps.is_available():
+        mps_device = torch.device("mps")
+        metal_flag = True
+    else:
+        metal_flag = False
+
+    # load to GPU if available
     for idx, (images, labels) in enumerate(train_loader):
         data_time.update(time.time() - end)
-
-        images = images.cuda(non_blocking=True)
-        labels = labels.cuda(non_blocking=True)
+        if metal_flag:
+            images = images.to(mps_device)
+            labels = labels.to(mps_device)
+        else:
+            images = images.cuda(non_blocking=True)
+            labels = labels.cuda(non_blocking=True)
         bsz = labels.shape[0]
 
         # warm-up learning rate
@@ -247,9 +263,21 @@ def validate(val_loader, model, criterion, opt):
 
     with torch.no_grad():
         end = time.time()
+        # check for metal  GPU
+        if torch.backends.mps.is_available():
+            mps_device = torch.device("mps")
+            metal_flag = True
+        else:
+            metal_flag = False
+
+        # load to GPU
         for idx, (images, labels) in enumerate(val_loader):
-            images = images.float().cuda()
-            labels = labels.cuda()
+            if metal_flag:
+                images = images.float().to(mps_device)
+                labels = labels.to(mps_device)
+            else:
+                images = images.float().cuda()
+                labels = labels.cuda()
             bsz = labels.shape[0]
 
             # forward
