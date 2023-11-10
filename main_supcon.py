@@ -193,6 +193,10 @@ def set_model(opt):
         model = model.cuda()
         criterion = criterion.cuda()
         cudnn.benchmark = True
+    elif torch.backends.mps.is_available():
+        mps_device = torch.device("mps")
+        model = model.to(mps_device)
+        criterion = criterion.to(mps_device)
 
     return model, criterion
 
@@ -206,11 +210,18 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
     losses = AverageMeter()
 
     end = time.time()
+    if torch.backends.mps.is_available():
+        mps_device = torch.device("mps")
+        metal_flag = True
+    else:
+        metal_flag = False
     for idx, (images, labels) in enumerate(train_loader):
         data_time.update(time.time() - end)
-
         images = torch.cat([images[0], images[1]], dim=0)
-        if torch.cuda.is_available():
+        if metal_flag:
+            images = images.to(mps_device)
+            labels = labels.to(mps_device)
+        elif torch.cuda.is_available():
             images = images.cuda(non_blocking=True)
             labels = labels.cuda(non_blocking=True)
         bsz = labels.shape[0]
