@@ -77,6 +77,9 @@ def parse_option():
     parser.add_argument('--trial', type=str, default='0',
                         help='id for recording multiple runs')
 
+    # seed for reproducibility
+    parser.add_argument('--seed', type=int, default=3, help='seed')
+    
     opt = parser.parse_args()
 
     # check if dataset is path that passed required arguments
@@ -255,6 +258,11 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
 def main():
     opt = parse_option()
 
+    #set seeds for reprod.
+    torch.manual_seed(opt.seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
     # build data loader
     train_loader = set_loader(opt)
 
