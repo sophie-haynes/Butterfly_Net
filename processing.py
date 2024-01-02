@@ -20,9 +20,9 @@ def mask_outside_lungs(img_np, spacing, seg_img, margin=0, crop=True, flatten_ba
                     img_np, seg_img)
     if (crop):
         # crop seg masked img to the seg mask
-        blk_img_np, blk_crop_changes = crop_to_mask(blk_img_np, spacing, seg_img, 15)
+        blk_img_np, blk_crop_changes = crop_to_mask(blk_img_np, spacing, seg_img, margin)
         # crop original image
-        img_np, crop_changes = crop_to_mask(img_np, spacing, seg_img, 15)
+        img_np, crop_changes = crop_to_mask(img_np, spacing, seg_img, margin)
         # crop segmentation map to match
         seg_img, _ = opencxr.utils.apply_size_changes_to_img(seg_img,spacing,crop_changes)
 
