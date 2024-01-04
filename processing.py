@@ -283,6 +283,7 @@ def process_and_export_full_cxr(img_name, label, train_test, load_dir, \
         # mask from segmentor
         out_img_np = opencxr.utils.mask_crop.set_non_mask_constant(img_np, seg_img)
         out_img_np, out_crop_changes = crop_to_mask(out_img_np, spacing, seg_img, margin)
+
         out_img_np = out_img_np.T
     else:
         print("cropping only...")
@@ -296,12 +297,14 @@ def process_and_export_full_cxr(img_name, label, train_test, load_dir, \
     print("Saving image to {}".format(save_out))
     #creating save path
     Path("/".join(save_out.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
-    # return (save_out,out_img_np)
+
+    out_img_np = out_img_np * (255/out_img_np.max())
+    # return (out_img_np)
 
     #save image
+    cv2.imwrite(save_out,out_img_np.astype('uint8'))
 
     # plt.imsave(save_out, out_img_np, cmap="grey")
-    cv2.imwrite(save_out, out_img_np) 
     # # BUG: reading image with plt vs opencxr results in different orientation
     # #       ~ not using opencxr after this, so use plt alignment by adding .T
     # # NOTE: Pytorch only supports 8-bit png atm - uint8
@@ -309,4 +312,4 @@ def process_and_export_full_cxr(img_name, label, train_test, load_dir, \
     # # # # NOTE: Ok, I give up. Now the images are coming out with tiny values,
     # # # #       and when multiplied by 255, produce floats between 0-16
     # # # #      ~ makes posterised effect, information loss!!! Use CV2 write
-    # write_file(save_out, (out_img_np/255).astype('uint8').T, out_spacing)
+    # write_file(save_out, (out_img_np).astype('uint8').T, out_spacing)
