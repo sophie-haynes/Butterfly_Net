@@ -133,7 +133,7 @@ dmypy.json
 save/
 
 # Mac Files
-.DS_Store
+**/.DS_Store
 
 # Data
 data/**/*.png
