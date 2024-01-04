@@ -1,6 +1,9 @@
 """
 Author: Yonglong Tian (yonglong@mit.edu)
 Date: May 07, 2020
+#####
+Author: Sophie Haynes (s.c.haynes@rgu.ac.uk)
+Date: November 10, 2023
 """
 from __future__ import print_function
 
@@ -31,9 +34,13 @@ class SupConLoss(nn.Module):
         Returns:
             A loss scalar.
         """
-        device = (torch.device('cuda')
-                  if features.is_cuda
-                  else torch.device('cpu'))
+        #### Add metal GPU support 
+        if features.is_cuda:
+            device = torch.device('cuda')
+        elif torch.backends.mps.is_available():
+            device = torch.device("mps")
+        else:
+            device = torch.device('cpu')
 
         if len(features.shape) < 3:
             raise ValueError('`features` needs to be [bsz, n_views, ...],'
