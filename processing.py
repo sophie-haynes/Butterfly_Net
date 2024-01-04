@@ -45,9 +45,9 @@ def crop_to_mask(img_np, spacing, mask_np, margin_in_mm):
 
 def split_to_lung_halves(img_np, seg_result):
     """
-    A method split image into two halves, using the midpoint between the 
-    innermost x coordinates of each lung. 
-    
+    A method split image into two halves, using the midpoint between the
+    innermost x coordinates of each lung.
+
     :param img_np: the original image
     :param seg_result: the segmentation mask of the lungs
     :return: Left and right lung image halves with same dimensions
@@ -65,7 +65,7 @@ def split_to_lung_halves(img_np, seg_result):
     lung_centroid = int(l_in + ((r_in-l_in)/2))
     # crop dims
     crop_x_len = min(int(img_np.shape[0]-lung_centroid),int(0+lung_centroid))
-    
+
     return img_np[int(lung_centroid-crop_x_len):lung_centroid,0:img_np.shape[1]].T,\
            img_np[lung_centroid:int(lung_centroid+crop_x_len),0:img_np.shape[1]].T
 
@@ -73,12 +73,12 @@ def split_to_lung_halves(img_np, seg_result):
 def mask_outside_lungs(img_np, spacing, seg_img, margin=0, crop=True, flatten_base = False):
     """
     Method to mask all tissue from the lung tissue outward.
-    
+
     :param img_np: image to be masked, numpy array.
     :param spacing: image load spacing, numpy array.
     :param seg_result: segmentaion mask of lungs, numpy array.
     :param margin: boundary (in pixels) to add to mask border, int.
-    :param crop: crop image to segmentation mask, boolean. 
+    :param crop: crop image to segmentation mask, boolean.
     :param flatten_base: make bottom of mask flat, boolean
     :return: The masked image
     """
@@ -144,18 +144,18 @@ def mask_outside_lungs(img_np, spacing, seg_img, margin=0, crop=True, flatten_ba
     combined = np.ma.mask_or(np.ma.make_mask(mask,dtype=int),np.ma.make_mask(seg_img.T))
     # blackout mask on image
     combined_seg_img = opencxr.utils.mask_crop.set_non_mask_constant(img_np.T,combined)
-    
+
     return combined_seg_img
-    
+
 def mask_outside_lungs_and_split(img_np, spacing, seg_img, margin=0, crop=True, flatten_base=False):
     """
     Method to mask all tissue from the lung tissue outward.
-    
+
     :param img_np: image to be masked, numpy array.
     :param spacing: image load spacing, numpy array.
     :param seg_result: segmentaion mask of lungs, numpy array.
     :param margin: boundary (in pixels) to add to mask border, int.
-    :param crop: crop image to segmentation mask, boolean. 
+    :param crop: crop image to segmentation mask, boolean.
     :param :
     :return: Left Image, Right Image
     """
@@ -229,13 +229,13 @@ def process_and_export_full_cxr(img_name, label, train_test, load_dir, \
                                 flatten_base=False, out_size = 1024):
     """
     Method to mask all tissue from the lung tissue outward.
-    
+
     :param img_name: name image to be processed, string.
     :param label: label for image, string.
     :param train: label whether training, test or val, string.
     :param load_dir: path to where images to process are, string.
     :param save_dir: path for image export, child directories of configurations will be applied, string.
-    :param cxr_seg_alg: opencxr lung segmentor object. 
+    :param cxr_seg_alg: opencxr lung segmentor object.
     :param cxr_std_alg: opencxr cxr standardiser object.
     :param margin: apply margin to crop, int.
     :param std: apply opencxr image standardisation, boolean.
@@ -246,14 +246,14 @@ def process_and_export_full_cxr(img_name, label, train_test, load_dir, \
     # throw exception if both masks are set to True
     if arch_mask and lung_mask:
             raise Exception("Both mask options set to True. Please only specify one mask type to use and try again.")
-    
+
     # parse configs to pathname
-    masking_process = "lung_seg" if lung_mask else "arch_seg" if arch_mask else "crop" 
+    masking_process = "lung_seg" if lung_mask else "arch_seg" if arch_mask else "crop"
     std_process = "std" if std else "raw"
     base = "flattened" if flatten_base and arch_mask else "unflattened" if arch_mask else ""
-    
+
     save_out = os.path.join(save_dir,masking_process,base,std_process,str(out_size),train_test)
-    
+
     if str(label) == "1":
         #nodule sample
         save_out = os.path.join(save_out,"nodule",img_name.split(".")[0]+".png")
@@ -262,11 +262,11 @@ def process_and_export_full_cxr(img_name, label, train_test, load_dir, \
         save_out = os.path.join(save_out,"normal",img_name.split(".")[0]+".png")
     else:
         raise Exception("Invalid label parameter. Please pass 1 or 0 as label.")
-        
+
     # load image
     print("loading {}".format(os.path.join(load_dir,img_name)))
     img_np, spacing, dcm_tags = read_file(os.path.join(load_dir,img_name))
-    
+
     if std:
         # apply image standardisation
         img_np, spacing, std_size_changes = \
@@ -292,18 +292,21 @@ def process_and_export_full_cxr(img_name, label, train_test, load_dir, \
     # resize
     out_img_np, out_spacing, out_changes =opencxr.utils.resize_rescale.resize_to_x_y(\
                                                 out_img_np, spacing,out_size,out_size)
-    
+
     print("Saving image to {}".format(save_out))
     #creating save path
     Path("/".join(save_out.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
     # return (save_out,out_img_np)
-    
+
     #save image
-    
+
     # plt.imsave(save_out, out_img_np, cmap="grey")
-    # cv2.imwrite(save_out, out_img_np) 
-    # # BUG: reading image with plt vs opencxr results in different orientation 
+    cv2.imwrite(save_out, out_img_np) 
+    # # BUG: reading image with plt vs opencxr results in different orientation
     # #       ~ not using opencxr after this, so use plt alignment by adding .T
     # # NOTE: Pytorch only supports 8-bit png atm - uint8
-    # # NOTE: image needs normalised to 255 or else encoding becomes garbled
-    write_file(save_out, (out_img_np/255).astype('uint8').T, out_spacing)
+    # # # NOTE: image needs normalised to 255 or else encoding becomes garbled due to giant images
+    # # # # NOTE: Ok, I give up. Now the images are coming out with tiny values,
+    # # # #       and when multiplied by 255, produce floats between 0-16
+    # # # #      ~ makes posterised effect, information loss!!! Use CV2 write
+    # write_file(save_out, (out_img_np/255).astype('uint8').T, out_spacing)
