@@ -136,4 +136,4 @@ save/
 **/.DS_Store
 
 # Data
-data/**/*.png
+data/*
