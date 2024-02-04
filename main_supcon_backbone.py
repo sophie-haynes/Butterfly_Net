@@ -80,7 +80,7 @@ def parse_option():
     # seed for reproducibility
     parser.add_argument('--seed', type=int, default=3, help='seed')
 
-    parser.add_argument('--weight_version', type=str, default="v1", choice = ["v1", "v2"], help='weight version to use')
+    parser.add_argument('--weight_version', type=str, default="v1", choices = ["v1", "v2"], help='weight version to use')
 
     opt = parser.parse_args()
 
