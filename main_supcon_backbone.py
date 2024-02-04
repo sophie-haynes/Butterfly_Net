@@ -14,7 +14,7 @@ from torchvision import transforms, datasets
 from util import TwoCropTransform, AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
-from networks.resnet_big import SupConResNetV2
+from networks.resnet_big import SupConResNetV1,SupConResNetV2
 from losses import SupConLoss
 
 try:
@@ -80,6 +80,8 @@ def parse_option():
     # seed for reproducibility
     parser.add_argument('--seed', type=int, default=3, help='seed')
 
+    parser.add_argument('--weight_version', type=string, default="v1", choice = ["v1", "v2"], help='weight version to use')
+
     opt = parser.parse_args()
 
     # check if dataset is path that passed required arguments
@@ -99,8 +101,8 @@ def parse_option():
     for it in iterations:
         opt.lr_decay_epochs.append(int(it))
 
-    opt.model_name = 'backbone_{}_{}_{}_lr_{}_decay_{}_bsz_{}_temp_{}_trial_{}'.\
-        format(opt.method, opt.dataset, opt.model, opt.learning_rate,
+    opt.model_name = 'backbone{}_{}_{}_{}_lr_{}_decay_{}_bsz_{}_temp_{}_trial_{}'.\
+        format(opt.weight_version, opt.method, opt.dataset, opt.model, opt.learning_rate,
                opt.weight_decay, opt.batch_size, opt.temp, opt.trial)
 
     if opt.cosine:
@@ -180,7 +182,12 @@ def set_loader(opt):
 
 
 def set_model(opt):
-    model = SupConResNetV2(name=opt.model)
+    if opt.weight_version == "v2":
+        model = SupConResNetV2(name=opt.model)
+    elif opt.weight_version == "v1":
+        model = SupConResNetV1(name=opt.model)
+    else:
+        raise ValueError("Weight version provided is not available")
     criterion = SupConLoss(temperature=opt.temp)
 
     # enable synchronized Batch Normalization
