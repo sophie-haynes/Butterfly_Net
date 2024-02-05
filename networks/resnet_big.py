@@ -192,7 +192,9 @@ class SupConResNetW2(nn.Module):
         model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V2")
         dim_in = model_fun.fc.in_features
         # remove existing head
-        model_fun.fc = nn.Sequential()
+        # https://discuss.pytorch.org/t/how-to-delete-layer-in-pretrained-model/17648/2
+        modules = list(model_fun.children())[:-1]
+        model_fun = nn.Sequential(*modules)
         self.encoder = model_fun
         if head == 'linear':
             self.head = nn.Linear(dim_in, feat_dim)
@@ -218,7 +220,9 @@ class SupConResNetW1(nn.Module):
         model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
         dim_in = model_fun.fc.in_features
         # remove existing head
-        model_fun.fc = nn.Sequential()
+        modules = list(model_fun.children())[:-1]
+        model_fun = nn.Sequential(*modules)
+
         self.encoder = model_fun
         if head == 'linear':
             self.head = nn.Linear(dim_in, feat_dim)
@@ -245,7 +249,8 @@ class SupConDenseNetW1(nn.Module):
         model_fun = torchvision.models.densenet121(weights="IMAGENET1K_V1")
         dim_in = model_fun.classifier.in_features
         # remove existing head
-        model_fun.classifier = nn.Sequential()
+        modules = list(model_fun.children())[:-1]
+        model_fun = nn.Sequential(*modules)
         self.encoder = model_fun
         if head == 'linear':
             self.head = nn.Linear(dim_in, feat_dim)
@@ -271,7 +276,8 @@ class SupConSwinV2TW1(nn.Module):
         model_fun = torchvision.models.swin_v2_t(weights="IMAGENET1K_V1")
         dim_in = model_fun.head.in_features
         # remove existing head
-        model_fun.head = nn.Sequential()
+        modules = list(model_fun.children())[:-1]
+        model_fun = nn.Sequential(*modules)
         self.encoder = model_fun
         if head == 'linear':
             self.head = nn.Linear(dim_in, feat_dim)
