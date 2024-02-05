@@ -12,7 +12,8 @@ from main_ce import set_loader
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer
-from networks.resnet_big import SupConResNetV2, LinearClassifier
+from networks.resnet_big import SupConResNetW1,SupConResNetW2, SupConDenseNetW1,SupConSwinV2TW1,LinearClassifier
+
 
 try:
     import apex
@@ -48,7 +49,8 @@ def parse_option():
                         help='momentum')
 
     # model dataset
-    parser.add_argument('--model', type=str, default='resnet50')
+    parser.add_argument('--model', type=str, choices = ['resnet50','densenet121','swin_v2_t'], help="backbone for classification")
+
     parser.add_argument('--dataset', type=str, default='cifar10',
                         choices=['cifar10', 'cifar100'], help='dataset')
 
@@ -62,7 +64,7 @@ def parse_option():
                         help='path to pre-trained model')
 
     parser.add_argument('--seed', type=int, default=3, help='seed')
-    
+
     opt = parser.parse_args()
 
     # set the path according to the environment
@@ -103,7 +105,15 @@ def parse_option():
 
 
 def set_model(opt):
-    model = SupConResNetV2(name=opt.model)
+    if opt.model == "resnet50":
+        model = SupConResNetV1(name=opt.model)
+    elif if opt.model == "densenet121":
+        model = SupConDenseNetW1(name=opt.model)
+    elif if opt.model == "swin_v2_t":
+        model = SupConSwinV2TW1(name=opt.model)
+    else:
+        raise ValueError("Model backbone type invalid.")
+
     criterion = torch.nn.CrossEntropyLoss()
 
     classifier = LinearClassifier(name=opt.model, num_classes=opt.n_cls)
@@ -236,7 +246,7 @@ def main():
     torch.manual_seed(opt.seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    
+
     # build data loader
     train_loader, val_loader = set_loader(opt)
 

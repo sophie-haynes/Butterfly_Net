@@ -307,7 +307,12 @@ class LinearClassifier(nn.Module):
     def __init__(self, name='resnet50', num_classes=10):
         super(LinearClassifier, self).__init__()
         _, feat_dim = model_dict[name]
-        self.fc = nn.Linear(feat_dim, num_classes)
+        if name == "resnet50":
+            self.fc = nn.Linear(feat_dim, num_classes)
+        elif name == "densenet121":
+            self.classifier = nn.Linear(feat_dim, num_classes)
+        elif name == "swin_v2_t":
+            self.head = nn.Linear(feat_dim, num_classes)
 
     def forward(self, features):
         return self.fc(features)
