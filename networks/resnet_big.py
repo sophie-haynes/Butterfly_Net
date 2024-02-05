@@ -242,7 +242,7 @@ class SupConDenseNetV1(nn.Module):
     """backbone + projection head"""
     def __init__(self, name='densenet121', head='mlp', feat_dim=128):
         super(SupConDenseNetV1, self).__init__()
-        model_fun = torchvision.models.(weights="IMAGENET1K_V1")
+        model_fun = torchvision.models.densenet121(weights="IMAGENET1K_V1")
         dim_in = model_fun.classifier.in_features
         # remove existing head
         model_fun.classifier = nn.Sequential()
