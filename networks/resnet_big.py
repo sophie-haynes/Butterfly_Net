@@ -185,10 +185,10 @@ class SupConResNet(nn.Module):
         feat = F.normalize(self.head(feat), dim=1)
         return feat
 
-class SupConResNetV2(nn.Module):
+class SupConResNetW2(nn.Module):
     """backbone + projection head"""
     def __init__(self, name='resnet50', head='mlp', feat_dim=128):
-        super(SupConResNetV2, self).__init__()
+        super(SupConResNetW2, self).__init__()
         model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V2")
         dim_in = model_fun.fc.in_features
         # remove existing head
@@ -211,10 +211,10 @@ class SupConResNetV2(nn.Module):
         feat = F.normalize(self.head(feat), dim=1)
         return feat
 
-class SupConResNetV1(nn.Module):
+class SupConResNetW1(nn.Module):
     """backbone + projection head"""
     def __init__(self, name='resnet50', head='mlp', feat_dim=128):
-        super(SupConResNetV1, self).__init__()
+        super(SupConResNetW1, self).__init__()
         model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
         dim_in = model_fun.fc.in_features
         # remove existing head
@@ -238,10 +238,10 @@ class SupConResNetV1(nn.Module):
         return feat
 
 
-class SupConDenseNetV1(nn.Module):
+class SupConDenseNetW1(nn.Module):
     """backbone + projection head"""
     def __init__(self, name='densenet121', head='mlp', feat_dim=128):
-        super(SupConDenseNetV1, self).__init__()
+        super(SupConDenseNetW1, self).__init__()
         model_fun = torchvision.models.densenet121(weights="IMAGENET1K_V1")
         dim_in = model_fun.classifier.in_features
         # remove existing head
@@ -264,6 +264,31 @@ class SupConDenseNetV1(nn.Module):
         feat = F.normalize(self.head(feat), dim=1)
         return feat
 
+class SupConSwinV2TW1(nn.Module):
+    """backbone + projection head"""
+    def __init__(self, name='swin_v2_t', head='mlp', feat_dim=128):
+        super(SupConDenseNetW1, self).__init__()
+        model_fun = torchvision.models.swin_v2_t(weights="IMAGENET1K_V1")
+        dim_in = model_fun.head.in_features
+        # remove existing head
+        model_fun.head = nn.Sequential()
+        self.encoder = model_fun
+        if head == 'linear':
+            self.head = nn.Linear(dim_in, feat_dim)
+        elif head == 'mlp':
+            self.head = nn.Sequential(
+                nn.Linear(dim_in, dim_in),
+                nn.ReLU(inplace=True),
+                nn.Linear(dim_in, feat_dim)
+            )
+        else:
+            raise NotImplementedError(
+                'head not supported: {}'.format(head))
+
+    def forward(self, x):
+        feat = self.encoder(x)
+        feat = F.normalize(self.head(feat), dim=1)
+        return feat
 
 class SupCEResNet(nn.Module):
     """encoder + classifier"""

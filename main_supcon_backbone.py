@@ -14,7 +14,7 @@ from torchvision import transforms, datasets
 from util import TwoCropTransform, AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
-from networks.resnet_big import SupConResNetV1,SupConResNetV2, SupConDenseNetV1
+from networks.resnet_big import SupConResNetW1,SupConResNetW2, SupConDenseNetW1,SupConSwinV2TW1
 from losses import SupConLoss
 
 try:
@@ -51,7 +51,7 @@ def parse_option():
                         help='momentum')
 
     # model dataset
-    parser.add_argument('--model', type=str, choices = ['resnet50','densenet121'], help="backbone for classification")
+    parser.add_argument('--model', type=str, choices = ['resnet50','densenet121','swin_v2_t'], help="backbone for classification")
     parser.add_argument('--dataset', type=str, default='cifar10',
                         choices=['cifar10', 'cifar100', 'path'], help='dataset')
     parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
@@ -183,18 +183,25 @@ def set_loader(opt):
 def set_model(opt):
     if opt.model == "resnet50":
         if opt.weight_version == "v2":
-            model = SupConResNetV2(name=opt.model)
+            model = SupConResNetW2(name=opt.model)
         elif opt.weight_version == "v1":
-            model = SupConResNetV1(name=opt.model)
+            model = SupConResNetW1(name=opt.model)
         else:
             raise ValueError("Weight version provided is not available")
     elif opt.model == "densenet121":
         if opt.weight_version == "v2":
             raise NotImplementedError("Weight version provided is not available")
         elif opt.weight_version == "v1":
-            model = SupConDenseNetV1(name=opt.model)
+            model = SupConDenseNetW1(name=opt.model)
         else:
             raise ValueError("Weight version provided is not available")
+    elif opt.model == "swin_v2_t":
+        if opt.weight_version == "v2":
+            raise NotImplementedError("Weight version provided is not available")
+        elif opt.weight_version == "v1":
+            model = SupConSwinV2TW1(name=opt.model)
+    else:
+        raise ValueError("Model backbone type invalid.")
     criterion = SupConLoss(temperature=opt.temp)
 
     # enable synchronized Batch Normalization
