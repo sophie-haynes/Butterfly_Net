@@ -107,9 +107,9 @@ def parse_option():
 def set_model(opt):
     if opt.model == "resnet50":
         model = SupConResNetV1(name=opt.model)
-    elif if opt.model == "densenet121":
+    elif opt.model == "densenet121":
         model = SupConDenseNetW1(name=opt.model)
-    elif if opt.model == "swin_v2_t":
+    elif opt.model == "swin_v2_t":
         model = SupConSwinV2TW1(name=opt.model)
     else:
         raise ValueError("Model backbone type invalid.")
