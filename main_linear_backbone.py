@@ -106,7 +106,7 @@ def parse_option():
 
 def set_model(opt):
     if opt.model == "resnet50":
-        model = SupConResNetV1(name=opt.model)
+        model = SupConResNetW1(name=opt.model)
     elif opt.model == "densenet121":
         model = SupConDenseNetW1(name=opt.model)
     elif opt.model == "swin_v2_t":
