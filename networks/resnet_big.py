@@ -267,7 +267,7 @@ class SupConDenseNetW1(nn.Module):
 class SupConSwinV2TW1(nn.Module):
     """backbone + projection head"""
     def __init__(self, name='swin_v2_t', head='mlp', feat_dim=128):
-        super(SupConDenseNetW1, self).__init__()
+        super(SupConSwinV2TW1, self).__init__()
         model_fun = torchvision.models.swin_v2_t(weights="IMAGENET1K_V1")
         dim_in = model_fun.head.in_features
         # remove existing head
