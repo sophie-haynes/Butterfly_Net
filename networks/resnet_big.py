@@ -145,7 +145,7 @@ model_dict = {
     'resnet34': [resnet34, 512],
     'resnet50': [resnet50, 2048],
     'resnet101': [resnet101, 2048],
-    'swin_v2_t': [torchvision.models.swin_v2_t(weights="IMAGENET1K_V1"), 768],
+    'swin_v2_t': [None, 768],
     'densenet121': [None, 1024]
 }
 
@@ -280,7 +280,7 @@ class SupConSwinV2TW1(nn.Module):
         model_fun = torchvision.models.swin_v2_t(weights="IMAGENET1K_V1")
         dim_in = model_fun.head.in_features
         # remove existing head
-        model_fun.fc = nn.Identity()
+        model_fun.head = nn.Identity()
 
         self.encoder = model_fun
         if head == 'linear':
@@ -312,6 +312,7 @@ class SupCEResNet(nn.Module):
 
     def forward(self, x):
         return self.fc(self.encoder(x))
+
 
 
 class LinearClassifier(nn.Module):
