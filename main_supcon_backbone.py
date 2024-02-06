@@ -188,7 +188,7 @@ def set_model(opt):
             model = SupConResNetW2(name=opt.model)
         elif opt.weight_version == "v1":
             if opt.rand_weights:
-                model = SupConResNetW1(name=opt.model)
+                model = SupConResNetW1(name=opt.model,rand_init=opt.rand_weights)
                 opt.model_name = "rand_"+opt.model_name
             else:
                 model = SupConResNetW1(name=opt.model)
