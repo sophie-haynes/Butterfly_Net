@@ -145,6 +145,8 @@ model_dict = {
     'resnet34': [resnet34, 512],
     'resnet50': [resnet50, 2048],
     'resnet101': [resnet101, 2048],
+    'swin_v2_t': [None, 768],
+    'densenet121': [None, 1024]
 }
 
 
@@ -161,6 +163,7 @@ class LinearBatchNorm(nn.Module):
         x = x.view(-1, self.dim)
         return x
 
+# Supervised Contrastive Models  ==============================================
 
 class SupConResNet(nn.Module):
     """backbone + projection head"""
@@ -296,6 +299,8 @@ class SupConSwinV2TW1(nn.Module):
         feat = self.encoder(x)
         feat = F.normalize(self.head(feat), dim=1)
         return feat
+
+# Cross Entropy Models  =======================================================
 
 class SupCEResNet(nn.Module):
     """encoder + classifier"""
