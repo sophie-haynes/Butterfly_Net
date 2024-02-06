@@ -187,7 +187,7 @@ class SupConResNet(nn.Module):
 
 class SupConResNetW2(nn.Module):
     """backbone + projection head"""
-    def __init__(self, name='resnet50', head='mlp', feat_dim=128):
+    def __init__(self, name='resnet50', head='mlp', feat_dim=128, rand_init=False):
         super(SupConResNetW2, self).__init__()
         model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V2")
         dim_in = model_fun.fc.in_features
@@ -214,9 +214,12 @@ class SupConResNetW2(nn.Module):
 
 class SupConResNetW1(nn.Module):
     """backbone + projection head"""
-    def __init__(self, name='resnet50', head='mlp', feat_dim=128):
+    def __init__(self, name='resnet50', head='mlp', feat_dim=128, rand_init=False):
         super(SupConResNetW1, self).__init__()
-        model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
+        if rand_init:
+            model_fun = torchvision.models.resnet50()
+        else:
+            model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
         dim_in = model_fun.fc.in_features
         # remove existing head
         model_fun.fc = nn.Identity()
@@ -275,7 +278,7 @@ class SupConSwinV2TW1(nn.Module):
         dim_in = model_fun.head.in_features
         # remove existing head
         model_fun.fc = nn.Identity()
-        
+
         self.encoder = model_fun
         if head == 'linear':
             self.head = nn.Linear(dim_in, feat_dim)

@@ -80,6 +80,8 @@ def parse_option():
     # seed for reproducibility
     parser.add_argument('--seed', type=int, default=3, help='seed')
     parser.add_argument('--weight_version', type=str, default="v1", choices = ["v1", "v2"], help='ImageNet weights version to use')
+    parser.add_argument('--rand_weights', action='store_true',
+                        help='Randomly initialised weights')
 
     opt = parser.parse_args()
 
@@ -185,7 +187,10 @@ def set_model(opt):
         if opt.weight_version == "v2":
             model = SupConResNetW2(name=opt.model)
         elif opt.weight_version == "v1":
-            model = SupConResNetW1(name=opt.model)
+            if opt.rand_init:
+                model = SupConResNetW1(name=opt.model)
+            else:
+                model = SupConResNetW1(name=opt.model)
         else:
             raise ValueError("Weight version provided is not available")
     elif opt.model == "densenet121":
