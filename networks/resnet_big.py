@@ -145,7 +145,7 @@ model_dict = {
     'resnet34': [resnet34, 512],
     'resnet50': [resnet50, 2048],
     'resnet101': [resnet101, 2048],
-    'swin_v2_t': [None, 768],
+    'swin_v2_t': [torchvision.models.swin_v2_t(weights="IMAGENET1K_V1"), 768],
     'densenet121': [None, 1024]
 }
 
