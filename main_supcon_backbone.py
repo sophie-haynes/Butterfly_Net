@@ -202,6 +202,7 @@ def set_loader(opt):
         raise NotImplementedError("BBox support is not yet implemented!")
     else:
         cxr_v2_train_transform = v2.Compose([
+        v2.ToImage(),
         # added since RandomGrayscale was removed
         v2.RandomRotation(15),
         v2.RandomHorizontalFlip(),
