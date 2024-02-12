@@ -339,13 +339,10 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
         warmup_learning_rate(opt, epoch, idx, len(train_loader), optimizer)
 
         # compute loss
-        print("Extracting Features...")
         features = model(images)
-        print("Splitting...")
         f1, f2 = torch.split(features, [bsz, bsz], dim=0)
         features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
         if opt.method == 'SupCon':
-            print("Calculating SupCon Loss...")
             loss = criterion(features, labels)
         elif opt.method == 'SimCLR':
             loss = criterion(features)
@@ -354,11 +351,9 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
                              format(opt.method))
 
         # update metric
-        print("Updating Metric...")
         losses.update(loss.item(), bsz)
 
         # SGD
-        print("Optimizing...")
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -381,33 +376,26 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
 
 
 def main():
-    print("Parsing...")
     opt = parse_option()
 
     #set seeds for reprod.
-    print("Setting Seed...")
     torch.manual_seed(opt.seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
     # build data loader
-    print("Setting Train Loader...")
     train_loader = set_loader(opt)
 
     # build model and criterion
-    print("Building Model & Criterion...")
     model, criterion = set_model(opt)
 
     # build optimizer
-    print("Building optimizer...")
     optimizer = set_optimizer(opt, model)
 
     # tensorboard
-    print("Creating logger...")
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
 
     # training routine
-    print("Starting Training!")
     for epoch in range(1, opt.epochs + 1):
         print("Epoch {}\n".format(epoch))
         adjust_learning_rate(opt, optimizer, epoch)
