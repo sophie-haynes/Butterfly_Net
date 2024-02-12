@@ -162,14 +162,14 @@ def set_loader(opt):
     # CXR normalisation values - single channel
     elif opt.dataset == 'cxr14':
         if opt.cxr_proc == "crop":
-            mean = (162.7414)
-            std = (44.0701)
+            mean = [162.7414]
+            std = [44.0701]
         elif opt.cxr_proc == "lung_seg":
-            mean = (128.2716)
-            std = (76.7147)
+            mean = [128.2716]
+            std = [76.7147]
         elif opt.cxr_proc == "arch_seg":
-            mean = (128.2717)
-            std = (76.7147)
+            mean = [128.2717]
+            std = [76.7147]
         else:
             raise ValueError('cxr14 preprocessing unspecified!')
     elif opt.dataset == 'padchest':
