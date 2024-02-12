@@ -339,10 +339,13 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
         warmup_learning_rate(opt, epoch, idx, len(train_loader), optimizer)
 
         # compute loss
+        print("Extracting Features...")
         features = model(images)
+        print("Splitting...")
         f1, f2 = torch.split(features, [bsz, bsz], dim=0)
         features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
         if opt.method == 'SupCon':
+            print("Calculating SupCon Loss...")
             loss = criterion(features, labels)
         elif opt.method == 'SimCLR':
             loss = criterion(features)
@@ -351,9 +354,11 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
                              format(opt.method))
 
         # update metric
+        print("Updating Metric...")
         losses.update(loss.item(), bsz)
 
         # SGD
+        print("Optimizing...")
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
