@@ -10,6 +10,7 @@ import tensorboard_logger as tb_logger
 import torch
 import torch.backends.cudnn as cudnn
 from torchvision import transforms, datasets
+from torchvision.transforms import v2
 
 from util import TwoCropTransform, AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate
