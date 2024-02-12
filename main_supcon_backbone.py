@@ -98,8 +98,8 @@ def parse_option():
 
     # if running CXR experiment, make sure processing is specified
     try:
-        if (opt.dataset == 'cxr14' | opt.dataset == 'jsrt' | opt.dataset == 'padchest' | opt.dataset == 'openi'):
-            assert opt.cxr_proc == "crop" | opt.cxr_proc == "lung_seg" | opt.cxr_proc == "arch_seg";
+        if (opt.dataset == 'cxr14' or opt.dataset == 'jsrt' or opt.dataset == 'padchest' or opt.dataset == 'openi'):
+            assert opt.cxr_proc == "crop" or opt.cxr_proc == "lung_seg" or opt.cxr_proc == "arch_seg";
     except AssertionError as e:
         print("CXR pre-processing not specified! Ensure you select 'crop', 'lung_seg' or 'arch_seg' when running on CXR images.")
 
