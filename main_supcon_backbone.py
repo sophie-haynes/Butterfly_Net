@@ -58,6 +58,7 @@ def parse_option():
     parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
     parser.add_argument('--std', type=str, help='std of dataset in path in form of str tuple')
     parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
+
     parser.add_argument('--size', type=int, default=32, help='parameter for RandomResizedCrop')
 
     # method
@@ -86,7 +87,7 @@ def parse_option():
     parser.add_argument('--cxr_proc', type=str,choices=['crop', 'lung_seg','arch_seg'],help='CXR processing method applied')
     parser.add_argument('--fully_frozen', action='store_true',help="Freeze backbone and use as feature extractor")
     parser.add_argument('--half_frozen', action='store_true',help="Freeze half the backbone tune later layers")
-
+    parser.add_argument('--save_out', type=str, default=None, help='path to save to')
     opt = parser.parse_args()
 
     # check if dataset is path that passed required arguments
@@ -105,9 +106,12 @@ def parse_option():
     # set the path according to the environment
     if opt.data_folder is None:
         opt.data_folder = './datasets/'
-
-    opt.model_path = './save/SupCon/{}_models'.format(opt.dataset)
-    opt.tb_path = './save/SupCon/{}_tensorboard'.format(opt.dataset)
+    if opt.save_out is None:
+        opt.model_path = './save/SupCon/{}_models'.format(opt.dataset)
+        opt.tb_path = './save/SupCon/{}_tensorboard'.format(opt.dataset)
+    else:
+        opt.model_path = '{}/{}_models'.format(opt.save_out,opt.dataset)
+        opt.tb_path = '{}/{}_tensorboard'.format(opt.save_out,opt.dataset)
 
     iterations = opt.lr_decay_epochs.split(',')
     opt.lr_decay_epochs = list([])
