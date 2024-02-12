@@ -207,8 +207,8 @@ def set_loader(opt):
         v2.RandomRotation(15),
         v2.RandomHorizontalFlip(),
         v2.RandomApply([
-        # reduced saturation and contrast - prevent too much info loss + removed hue
-        v2.ColorJitter(0.4, 0.2, 0.2,0)
+            # reduced saturation and contrast - prevent too much info loss + removed hue
+            v2.ColorJitter(0.4, 0.2, 0.2,0)
         ], p=0.8),
         # moved after transforms to preserve resolution, reduced scale to increase likelihood of indicator presence
         v2.RandomResizedCrop(size=opt.size, scale=(0.6, 1.)),
@@ -241,7 +241,7 @@ def set_loader(opt):
             raise NotImplementedError("BBox support is not yet implemented!")
         else:
             train_dataset = datasets.ImageFolder(root=opt.data_folder,
-                                                transform=TwoCropTransform(cxr_v2_train_transform))
+                                                transform=TwoCropTransform(cxr_train_transform))
     elif opt.dataset == 'path':
         train_dataset = datasets.ImageFolder(root=opt.data_folder,
                                             transform=TwoCropTransform(train_transform))
