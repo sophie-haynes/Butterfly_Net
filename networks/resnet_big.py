@@ -217,12 +217,24 @@ class SupConResNetW2(nn.Module):
 
 class SupConResNetW1(nn.Module):
     """backbone + projection head"""
-    def __init__(self, name='resnet50', head='mlp', feat_dim=128, rand_init=False):
+    def __init__(self, name='resnet50', head='mlp', feat_dim=128, rand_init=False,frozen=False,half=False):
         super(SupConResNetW1, self).__init__()
         if rand_init:
+            print('Random Initialised Network!')
             model_fun = torchvision.models.resnet50()
         else:
+            print('ImageNetV1 Transfer Network!')
             model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
+            if frozen:
+                for param in model_fun.parameters():
+                    # freeze layers
+                    param.requires_grad=False
+            elif half:
+                i = 1
+                for param in model_fun.parameters():
+                    if i<=64:
+                        # freeze first half of network
+                        param.requires_grad=False
         dim_in = model_fun.fc.in_features
         # remove existing head
         model_fun.fc = nn.Identity()
