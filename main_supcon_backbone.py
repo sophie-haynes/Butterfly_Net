@@ -53,7 +53,7 @@ def parse_option():
     # model dataset
     parser.add_argument('--model', type=str, choices = ['resnet50','densenet121','swin_v2_t'], help="backbone for classification")
     parser.add_argument('--dataset', type=str, default='cifar10',
-                        choices=['cifar10', 'cifar100', 'path'], help='dataset')
+                        choices=['cifar10', 'cifar100', 'cxr14','jsrt','padchest','openi','path'], help='dataset')
     parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
     parser.add_argument('--std', type=str, help='std of dataset in path in form of str tuple')
     parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
@@ -80,8 +80,11 @@ def parse_option():
     # seed for reproducibility
     parser.add_argument('--seed', type=int, default=3, help='seed')
     parser.add_argument('--weight_version', type=str, default="v1", choices = ["v1", "v2"], help='ImageNet weights version to use')
-    parser.add_argument('--rand_weights', action='store_true',
-                        help='Randomly initialised weights')
+    parser.add_argument('--rand_weights', action='store_true', help='Randomly initialised weights')
+    parser.add_argument('--bbox', type=str, default=None, help='path to bounding box annnotations')
+    parser.add_argument('--cxr_proc', type=str,choices=['crop', 'lung_seg','arch_seg'],help='CXR processing method applied')
+    parser.add_argument('--fully_frozen', action='store_true',help="Freeze backbone and use as feature extractor")
+    parser.add_argument('--half_frozen', action='store_true',help="Freeze half the backbone tune later layers")
 
     opt = parser.parse_args()
 
@@ -91,9 +94,17 @@ def parse_option():
             and opt.mean is not None \
             and opt.std is not None
 
+    # if running CXR experiment, make sure processing is specified
+    try:
+        if (opt.dataset == 'cxr14' | opt.dataset == 'jsrt' | opt.dataset == 'padchest' | opt.dataset == 'openi'):
+            assert opt.cxr_proc == "crop" | opt.cxr_proc == "lung_seg" | opt.cxr_proc == "arch_seg";
+    except AssertionError as e:
+        print("CXR pre-processing not specified! Ensure you select 'crop', 'lung_seg' or 'arch_seg' when running on CXR images.")
+
     # set the path according to the environment
     if opt.data_folder is None:
         opt.data_folder = './datasets/'
+
     opt.model_path = './save/SupCon/{}_models'.format(opt.dataset)
     opt.tb_path = './save/SupCon/{}_tensorboard'.format(opt.dataset)
 
@@ -135,6 +146,7 @@ def parse_option():
 
 
 def set_loader(opt):
+
     # construct data loader
     if opt.dataset == 'cifar10':
         mean = (0.4914, 0.4822, 0.4465)
@@ -142,14 +154,34 @@ def set_loader(opt):
     elif opt.dataset == 'cifar100':
         mean = (0.5071, 0.4867, 0.4408)
         std = (0.2675, 0.2565, 0.2761)
+    # CXR normalisation values - single channel
+    elif opt.dataset == 'cxr14':
+        if opt.cxr_proc == "crop":
+            mean = (162.7414)
+            std = (44.0701)
+        elif opt.cxr_proc == "lung_seg":
+            mean = (128.2716)
+            std = (76.7147)
+        elif opt.cxr_proc == "arch_seg":
+            mean = (128.2717)
+            std = (76.7147)
+        else:
+            raise ValueError('cxr14 preprocessing unspecified!')
+    elif opt.dataset == 'padchest':
+        raise NotImplementedError("{} not yet implemented!".format(opt.dataset))
+    elif opt.dataset == 'jsrt':
+        raise NotImplementedError("{} not yet implemented!".format(opt.dataset))
+    elif opt.dataset == 'openi':
+        raise NotImplementedError("{} not yet implemented!".format(opt.dataset))
     elif opt.dataset == 'path':
         mean = eval(opt.mean)
         std = eval(opt.std)
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
     normalize = transforms.Normalize(mean=mean, std=std)
+    v2Normalise = v2.Normalize(mean=mean, std=std)
 
-    train_transform = transforms.Compose([
+    cifar_train_transform = transforms.Compose([
         transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomApply([
@@ -159,15 +191,51 @@ def set_loader(opt):
         transforms.ToTensor(),
         normalize,
     ])
+    if opt.bbox:
+        # custom dataset
+        # RandomIoUCrop
+        raise NotImplementedError("BBox support is not yet implemented!")
+    else:
+        cxr_v2_train_transform = v2.Compose([
+        # added since RandomGrayscale was removed
+        v2.RandomRotation(15),
+        v2.RandomHorizontalFlip(),
+        v2.RandomApply([
+        # reduced saturation and contrast - prevent too much info loss + removed hue
+        v2.ColorJitter(0.4, 0.2, 0.2,0)
+        ], p=0.8),
+        # moved after transforms to preserve resolution, reduced scale to increase likelihood of indicator presence
+        v2.RandomResizedCrop(size=opt.size, scale=(0.6, 1.)),
+        # required for normalisation
+        v2.ToDtype(torch.float32, scale=True),
+        v2Normalise
+        ])
+
+        cxr_train_transform = transforms.Compose([
+            transforms.RandomRotation(15),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomApply([
+                transforms.ColorJitter(0.4, 0.2, 0.2,0)
+            ], p=0.8),
+            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
+            transforms.ToTensor(),
+            normalize,
+        ])
 
     if opt.dataset == 'cifar10':
         train_dataset = datasets.CIFAR10(root=opt.data_folder,
-                                         transform=TwoCropTransform(train_transform),
+                                         transform=TwoCropTransform(cifar_train_transform),
                                          download=True)
     elif opt.dataset == 'cifar100':
         train_dataset = datasets.CIFAR100(root=opt.data_folder,
-                                          transform=TwoCropTransform(train_transform),
+                                          transform=TwoCropTransform(cifar_train_transform),
                                           download=True)
+    elif opt.dataset == 'cxr14':
+        if opt.bbox:
+            raise NotImplementedError("BBox support is not yet implemented!")
+        else:
+            train_dataset = datasets.ImageFolder(root=opt.data_folder,
+                                                transform=TwoCropTransform(cxr_v2_train_transform))
     elif opt.dataset == 'path':
         train_dataset = datasets.ImageFolder(root=opt.data_folder,
                                             transform=TwoCropTransform(train_transform))
@@ -191,7 +259,15 @@ def set_model(opt):
                 model = SupConResNetW1(name=opt.model,rand_init=opt.rand_weights)
                 opt.model_name = "rand_"+opt.model_name
             else:
-                model = SupConResNetW1(name=opt.model)
+                if opt.fully_frozen:
+                    opt.model_name = "FF_"+opt.model_name
+                elif opt.half_frozen:
+                    opt.model_name = "HF_"+opt.model_name
+                else:
+                    opt.model_name = "FN_"+opt.model_name
+
+                model = SupConResNetW1(name=opt.model, frozen=opt.fully_frozen,half=opt.half_frozen)
+
         else:
             raise ValueError("Weight version provided is not available")
     elif opt.model == "densenet121":
