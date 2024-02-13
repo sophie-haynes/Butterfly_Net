@@ -200,7 +200,7 @@ def set_loader(opt):
                 v2.ColorJitter(0.4, 0.2, 0.2,0)
             ], p=0.8),
             # moved after transforms to preserve resolution, reduced scale to increase likelihood of indicator presence
-            v2.RandomResizedCrop(size=opt.size, scale=(0.6, 1.)),
+            v2.RandomResizedCrop(size=opt.size, scale=(0.6, 1.),antialias=None),
             # required for normalisation
             v2.ToDtype(torch.float32, scale=True),
             v2Normalise
@@ -212,7 +212,7 @@ def set_loader(opt):
             transforms.RandomApply([
                 transforms.ColorJitter(0.4, 0.2, 0.2,0)
             ], p=0.8),
-            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
+            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.), antialias=None),
             transforms.ToTensor(),
             normalize,
         ])
