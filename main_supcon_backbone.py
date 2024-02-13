@@ -15,6 +15,8 @@ from torchvision.transforms import v2
 from util import TwoCropTransform, AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
+from util import crop_dict, lung_seg_dict, arch_seg_dict
+
 from networks.resnet_big import SupConResNetW1,SupConResNetW2, SupConDenseNetW1,SupConSwinV2TW1
 from losses import SupConLoss
 
@@ -159,25 +161,12 @@ def set_loader(opt):
     elif opt.dataset == 'cifar100':
         mean = (0.5071, 0.4867, 0.4408)
         std = (0.2675, 0.2565, 0.2761)
-    # CXR normalisation values - single channel
-    elif opt.dataset == 'cxr14':
-        if opt.cxr_proc == "crop":
-            mean = [162.7414]
-            std = [44.0701]
-        elif opt.cxr_proc == "lung_seg":
-            mean = [128.2716]
-            std = [76.7147]
-        elif opt.cxr_proc == "arch_seg":
-            mean = [128.2717]
-            std = [76.7147]
-        else:
-            raise ValueError('cxr14 preprocessing unspecified!')
-    elif opt.dataset == 'padchest':
-        raise NotImplementedError("{} not yet implemented!".format(opt.dataset))
-    elif opt.dataset == 'jsrt':
-        raise NotImplementedError("{} not yet implemented!".format(opt.dataset))
-    elif opt.dataset == 'openi':
-        raise NotImplementedError("{} not yet implemented!".format(opt.dataset))
+    elif opt.cxr_proc == "crop":
+        mean, std = crop_dict[opt.dataset]
+    elif opt.cxr_proc == "lung_seg":
+        mean, std = lung_seg_dict[opt.dataset]
+    elif opt.cxr_proc == "arch_seg":
+        mean, std = arch_seg_dict[opt.dataset]
     elif opt.dataset == 'path':
         mean = eval(opt.mean)
         std = eval(opt.std)
