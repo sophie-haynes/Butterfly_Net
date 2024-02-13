@@ -4,7 +4,8 @@ import math
 import numpy as np
 import torch
 import torch.optim as optim
-
+from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard.summary import hparams
 
 class TwoCropTransform:
     """Create two crops of the same image"""
@@ -93,3 +94,44 @@ def save_model(model, optimizer, opt, epoch, save_file):
     }
     torch.save(state, save_file)
     del state
+
+# custom writer to make hparams and scalars appear in same run in tensorboard
+class SummaryWriter(SummaryWriter):
+    def add_hparams(self, hparam_dict, metric_dict):
+        torch._C._log_api_usage_once("tensorboard.logging.add_hparams")
+        if type(hparam_dict) is not dict or type(metric_dict) is not dict:
+            raise TypeError('hparam_dict and metric_dict should be dictionary.')
+        exp, ssi, sei = hparams(hparam_dict, metric_dict)
+
+        logdir = self._get_file_writer().get_logdir()
+
+        with SummaryWriter(log_dir=logdir) as w_hp:
+            w_hp.file_writer.add_summary(exp)
+            w_hp.file_writer.add_summary(ssi)
+            w_hp.file_writer.add_summary(sei)
+            for k, v in metric_dict.items():
+                w_hp.add_scalar(k, v)
+
+
+crop_dict = {
+    # data      mean         std
+    'cxr14': [[162.7414], [44.0700]],
+    'openi': [[157.6150], [41.8371]],
+    'jsrt': [[161.7889], [41.3950]],
+    'padchest': [[160.3638], [44.8449]],
+}
+
+lung_seg_dict = {
+    # data       mean        std
+    'cxr14': [[162.7415], [44.0700]],
+    'openi': [[160.3638], [44.8449]],
+    'jsrt': [[161.7889], [41.3950]],
+    'padchest': [[160.3639], [44.8449]],
+}
+arch_seg_dict = {
+    # data       mean        std
+    'cxr14': [[128.2716], [76.7148]],
+    'openi': [[127.7211], [69.7704]],
+    'jsrt': [[139.9666], [72.4017]],
+    'padchest': [[129.5006], [72.6308]],
+}
