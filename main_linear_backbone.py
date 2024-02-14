@@ -113,7 +113,7 @@ def parse_option():
             opt.warmup_to = opt.learning_rate
     opt.model_name = '{}_trial_{}'.format(opt.model_name,opt.trial)
 
-    if opt.dataset == 'cxr14' or opt.dataset == 'jsrt' or opt.dataset == 'padchest' or opt.dataset == 'openi'):
+    if (opt.dataset == 'cxr14' or opt.dataset == 'jsrt' or opt.dataset == 'padchest' or opt.dataset == 'openi'):
         opt.n_cls = 2
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
