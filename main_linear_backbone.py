@@ -63,10 +63,11 @@ def parse_option():
 
     parser.add_argument('--ckpt', type=str, default='',
                         help='path to pre-trained model')
+    parser.add_argument('--trial', type=str, default='0',
+                        help='id for recording multiple runs')
 
     parser.add_argument('--seed', type=int, default=3, help='seed')
     parser.add_argument('--save_out', type=str, default=None, help='path to save to')
-
     opt = parser.parse_args()
 
     try:
@@ -92,8 +93,8 @@ def parse_option():
     for it in iterations:
         opt.lr_decay_epochs.append(int(it))
 
-    opt.model_name = 'backbone_{}_{}_{}_{}_lr_{}_decay_{}_bsz_{}'.\
-        format(opt.weight_version, opt.method,opt.dataset, opt.model, opt.learning_rate, opt.weight_decay,
+    opt.model_name = 'backbone_{}_{}_{}_lr_{}_decay_{}_bsz_{}'.\
+        format(opt.method,opt.dataset, opt.model, opt.learning_rate, opt.weight_decay,
                opt.batch_size)
 
     if opt.cosine:
