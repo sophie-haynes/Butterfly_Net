@@ -241,16 +241,25 @@ def validate(val_loader, model, classifier, criterion, opt):
         for idx, (images, labels) in enumerate(val_loader):
             print("idx: {}".format(idx))
             # images = images.float().cuda()
+            print("loading images to gpu")
             images = images.cuda()
+            print("loading labels to gpu")
             labels = labels.cuda()
+            print("getting batch size")
             bsz = labels.shape[0]
+            print("{}".format(bsz))
+            
 
             # forward
+            print("classifying")
             output = classifier(model.encoder(images))
+            print("calculating loss")
             loss = criterion(output, labels)
 
             # update metric
+            print("update loss")
             losses.update(loss.item(), bsz)
+            print("calculate accuracy")
             acc1= accuracy(output, labels)
             top1.update(acc1[0], bsz)
 
