@@ -174,8 +174,7 @@ def set_loader(opt):
         ])
 
     train_dataset = datasets.ImageFolder(root=os.path.join(opt.data_folder,"train"),
-                                     transform=cxr_v2_train_transform,
-                                     download=True)
+                                     transform=cxr_v2_train_transform)
     val_dataset = datasets.ImageFolder(root=os.path.join(opt.data_folder,"test"),
                                    transform=cxr_v2_val_transform)
     external_loaders = {}
