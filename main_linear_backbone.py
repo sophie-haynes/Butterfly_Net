@@ -245,7 +245,7 @@ def validate(val_loader, model, classifier, criterion, opt):
 
             # update metric
             losses.update(loss.item(), bsz)
-            acc1= accuracy(output, labels
+            acc1= accuracy(output, labels)
             top1.update(acc1[0], bsz)
             top5.update(acc5[0], bsz)
 
