@@ -299,12 +299,9 @@ def main():
         loss, acc = train(train_loader, model, classifier, criterion,
                           optimizer, epoch, opt)
         time2 = time.time()
-        # print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}'.format(epoch, time2 - time1, acc))
-        print("Train epoch {}".format(epoch))
-        print("Time: {:.2f}".format(time2-time1))
-        print("Accuracy: {}".format(acc))
+        print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}'.format(epoch, time2 - time1, acc))
         logger.add_scalar("train_loss",loss, epoch)
-        logger.add_scalar("train_acc",train_acc, epoch)
+        logger.add_scalar("train_acc",acc, epoch)
         logger.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], epoch)
         # eval for one epoch
         loss, val_acc = validate(val_loader, model, classifier, criterion, opt)
