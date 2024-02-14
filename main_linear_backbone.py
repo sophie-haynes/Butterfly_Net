@@ -278,6 +278,8 @@ def main():
     torch.backends.cudnn.benchmark = False
 
     # build data loader
+    # patch for handling no bbox
+    opt.bbox = None
     train_loader, val_loader,external_loaders = set_loader(opt)
 
     # build model and criterion
