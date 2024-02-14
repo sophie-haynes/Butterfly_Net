@@ -251,8 +251,10 @@ def validate(val_loader, model, classifier, criterion, opt):
             
 
             # forward
+            print("encoding images")
+            features = model.encoder(images)
             print("classifying")
-            output = classifier(model.encoder(images))
+            output = classifier(features.detach())
             print("calculating loss")
             loss = criterion(output, labels)
 
