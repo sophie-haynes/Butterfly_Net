@@ -221,7 +221,7 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
                   'loss {loss.val:.3f} ({loss.avg:.3f})\t'
                   'Acc {top1.val:.3f} ({top1.avg:.3f})'.format(
                    epoch, idx + 1, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses, top1=top1[0]))
+                   data_time=data_time, loss=losses, top1=top1.val))
             sys.stdout.flush()
 
     return losses.avg, top1.avg[0]
@@ -275,9 +275,9 @@ def validate(val_loader, model, classifier, criterion, opt):
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                       'Acc {top1.val:.3f} ({top1.avg:.3f})'.format(
                        idx, len(val_loader), batch_time=batch_time,
-                       loss=losses, top1=top1[0]))
+                       loss=losses, top1=top1.val))
 
-    print(' * Acc {top1.avg:.3f}'.format(top1=top1[0]))
+    print(' * Acc {top1.avg:.3f}'.format(top1=top1.val))
     return losses.avg, top1.avg[0]
 
 
