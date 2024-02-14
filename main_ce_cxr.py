@@ -183,6 +183,8 @@ def set_loader(opt):
     ext_names.remove(opt.dataset)
 
     train_sampler = None
+    print("train loader... {}".format(os.path.join(opt.data_folder,"train")))
+    print("val loader... {}".format(os.path.join(opt.data_folder,"test")))
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=opt.batch_size, shuffle=(train_sampler is None),
         num_workers=opt.num_workers, pin_memory=True, sampler=train_sampler)
@@ -193,9 +195,10 @@ def set_loader(opt):
     # external validation on the fly
     for ds_name in ext_names:
         ext_pth = opt.data_folder.replace(opt.dataset,ds_name)
+        
         ext_ds =  datasets.ImageFolder(root=os.path.join(ext_pth,"test"),
                                        transform=cxr_v2_val_transform)
-
+        print("ext val loader... {}".format(os.path.join(ext_pth,"test")))
         external_loader = torch.utils.data.DataLoader(
             ext_ds, batch_size=opt.batch_size, shuffle=False,
             num_workers=opt.num_workers, pin_memory=True)
