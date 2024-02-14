@@ -69,6 +69,7 @@ def parse_option():
 
     parser.add_argument('--seed', type=int, default=3, help='seed')
     parser.add_argument('--save_out', type=str, default=None, help='path to save to')
+    parser.add_argument('--size', type=int, default=32, help='parameter for RandomResizedCrop')
     opt = parser.parse_args()
 
     try:
