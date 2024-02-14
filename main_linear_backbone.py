@@ -202,7 +202,7 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
         # update metric
         losses.update(loss.item(), bsz)
         acc1 = accuracy(output, labels)
-        top1.update(acc1[0], bsz)
+        top1.update(acc1[0].item(), bsz)
 
         # SGD
         optimizer.zero_grad()
@@ -224,7 +224,7 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
                    data_time=data_time, loss=losses, top1=top1.val))
             sys.stdout.flush()
 
-    return losses.avg, top1.avg[0]
+    return losses.avg, top1.avg
 
 
 def validate(val_loader, model, classifier, criterion, opt):
@@ -263,7 +263,7 @@ def validate(val_loader, model, classifier, criterion, opt):
             losses.update(loss.item(), bsz)
             print("calculate accuracy")
             acc1= accuracy(output, labels)
-            top1.update(acc1[0], bsz)
+            top1.update(acc1[0].item(), bsz)
 
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -278,7 +278,7 @@ def validate(val_loader, model, classifier, criterion, opt):
                        loss=losses, top1=top1.val))
 
     print(' * Acc {top1.avg:.3f}'.format(top1=top1.val))
-    return losses.avg, top1.avg[0]
+    return losses.avg, top1.avg
 
 
 def main():
