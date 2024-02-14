@@ -173,10 +173,10 @@ def set_loader(opt):
             v2Normalise
         ])
 
-    train_dataset = datasets.ImageFolder(root=os.path.join(opt.data_path,"train"),
+    train_dataset = datasets.ImageFolder(root=os.path.join(opt.data_folder,"train"),
                                      transform=cxr_v2_train_transform,
                                      download=True)
-    val_dataset = datasets.ImageFolder(root=os.path.join(opt.data_path,"test"),
+    val_dataset = datasets.ImageFolder(root=os.path.join(opt.data_folder,"test"),
                                    transform=cxr_v2_val_transform)
     external_loaders = {}
 
@@ -193,7 +193,7 @@ def set_loader(opt):
 
     # external validation on the fly
     for ds_name in ext_names:
-        ext_pth = opt.data_path.replace(opt.dataset,ds_name)
+        ext_pth = opt.data_folder.replace(opt.dataset,ds_name)
         ext_ds =  datasets.ImageFolder(root=os.path.join(ext_pth,"test"),
                                        transform=cxr_v2_val_transform)
 
