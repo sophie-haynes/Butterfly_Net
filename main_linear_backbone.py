@@ -240,7 +240,6 @@ def validate(val_loader, model, classifier, criterion, opt):
     with torch.no_grad():
         end = time.time()
         for idx, (images, labels) in enumerate(val_loader):
-            print("idx: {}".format(idx))
             # images = images.float().cuda()
             images = images.cuda()
             labels = labels.cuda()
@@ -315,7 +314,7 @@ def main():
             best_acc = val_acc
 
         for ds_name in external_loaders.keys():
-            loss, val_acc = validate(external_loaders[ds_name], model, criterion, opt)
+            loss, val_acc = validate(external_loaders[ds_name], model, classifier, criterion, opt)
             logger.add_scalar('{}_val_loss'.format(ds_name), loss, epoch)
             logger.add_scalar('{}_val_acc'.format(ds_name), val_acc, epoch)
 
