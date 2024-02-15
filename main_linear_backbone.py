@@ -55,7 +55,7 @@ def parse_option():
     parser.add_argument('--dataset', type=str, choices=['cxr14','jsrt','padchest','openi'], help='dataset')
     parser.add_argument('--cxr_proc', type=str,choices=['crop', 'lung_seg','arch_seg'],help='CXR processing method applied')
     parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
-    
+
     # other setting
     parser.add_argument('--cosine', action='store_true',
                         help='using cosine annealing')
@@ -248,7 +248,7 @@ def validate(val_loader, model, classifier, criterion, opt):
             print("getting batch size")
             bsz = labels.shape[0]
             print("{}".format(bsz))
-            
+
 
             # forward
             print("encoding images")
@@ -277,7 +277,7 @@ def validate(val_loader, model, classifier, criterion, opt):
                        idx, len(val_loader), batch_time=batch_time,
                        loss=losses, top1=top1))
 
-    print(' * Acc {top1.avg:.3f}'.format(top1=top1.val))
+    print(' * Acc {top1.avg:.3f}'.format(top1=top1))
     return losses.avg, top1.avg
 
 
