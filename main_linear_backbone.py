@@ -317,16 +317,16 @@ def main():
         logger.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], epoch)
         # eval for one epoch
         loss, val_acc = validate(val_loader, model, classifier, criterion, opt)
-        logger.log_value('{}_test_loss'.format(opt.dataset), loss, epoch)
-        logger.log_value('{}_test_acc'.format(opt.dataset), val_acc, epoch)
+        logger.add_scalar('{}_test_loss'.format(opt.dataset), loss, epoch)
+        logger.add_scalar('{}_test_acc'.format(opt.dataset), val_acc, epoch)
 
         if val_acc > best_acc:
             best_acc = val_acc
 
         for ds_name in external_loaders.keys():
             loss, val_acc = validate(external_loaders[ds_name], model, criterion, opt)
-            logger.log_value('{}_val_loss'.format(ds_name), loss, epoch)
-            logger.log_value('{}_val_acc'.format(ds_name), val_acc, epoch)
+            logger.add_scalar('{}_val_loss'.format(ds_name), loss, epoch)
+            logger.add_scalar('{}_val_acc'.format(ds_name), val_acc, epoch)
 
         if epoch % opt.save_freq == 0:
             save_file = os.path.join(
