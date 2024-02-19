@@ -69,7 +69,7 @@ def parse_option():
 
     parser.add_argument('--seed', type=int, default=3, help='seed')
     parser.add_argument('--save_out', type=str, default=None, help='path to save to')
-    parser.add_argument('--size', type=int, default=32, help='parameter for RandomResizedCrop')
+    parser.add_argument('--size', type=int, default=224, help='parameter for RandomResizedCrop')
     opt = parser.parse_args()
 
     try:
@@ -314,6 +314,7 @@ def main():
             best_acc = val_acc
 
         for ds_name in external_loaders.keys():
+            print("{} Test".format(ds_name))
             loss, val_acc = validate(external_loaders[ds_name], model, classifier, criterion, opt)
             logger.add_scalar('{}_val_loss'.format(ds_name), loss, epoch)
             logger.add_scalar('{}_val_acc'.format(ds_name), val_acc, epoch)

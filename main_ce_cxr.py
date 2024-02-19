@@ -58,6 +58,7 @@ def parse_option():
     parser.add_argument('--model', type=str, default='resnet50')
     parser.add_argument('--dataset', type=str, choices=['cxr14','jsrt','padchest','openi'], help='dataset')
     parser.add_argument('--cxr_proc', type=str,choices=['crop', 'lung_seg','arch_seg'],help='CXR processing method applied')
+    parser.add_argument('--size', type=int, default=224, help='parameter for RandomResizedCrop')
 
     # other setting
     parser.add_argument('--cosine', action='store_true',
@@ -195,7 +196,7 @@ def set_loader(opt):
     # external validation on the fly
     for ds_name in ext_names:
         ext_pth = opt.data_folder.replace(opt.dataset,ds_name)
-        
+
         ext_ds =  datasets.ImageFolder(root=os.path.join(ext_pth,"test"),
                                        transform=cxr_v2_val_transform)
         print("ext val loader... {}".format(os.path.join(ext_pth,"test")))
