@@ -12,7 +12,7 @@ import torch.backends.cudnn as cudnn
 from main_ce_cxr import set_loader
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
-from util import set_optimizer
+from util import set_optimizer, save_model
 from util import SummaryWriter
 from networks.resnet_big import SupConResNetW1,SupConResNetW2, SupConDenseNetW1,SupConSwinV2TW1,LinearClassifier
 from util import crop_dict, lung_seg_dict, arch_seg_dict
