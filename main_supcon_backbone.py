@@ -192,7 +192,7 @@ def set_loader(opt):
     else:
         cxr_v2_train_transform = v2.Compose([
             v2.ToImage(),
-            v2.Resize(opt.size*3),
+            v2.Resize(
             # added since RandomGrayscale was removed
             v2.RandomRotation(15),
             v2.RandomHorizontalFlip(),
