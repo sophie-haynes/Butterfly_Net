@@ -173,8 +173,8 @@ def set_loader(opt):
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
 
     if opt.tensor:
-        train_dataset = TensorData(os.path.join(opt.data_folder,'img'),
-                        os.path.join(opt.data_folder,'img'))
+        train_dataset = TensorData(os.path.join(opt.data_folder,1,'img'),
+                        os.path.join(opt.data_folder,1,'label'))
         train_sampler = None
         train_loader = torch.utils.data.DataLoader(train_dataset,
                         batch_size=opt.batch_size,
@@ -323,6 +323,16 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
         metal_flag = True
     else:
         metal_flag = False
+
+    # load in current epoch data
+    if opt.tensor:
+        train_dataset = TensorData(os.path.join(opt.data_folder,epoch,'img'),
+                        os.path.join(opt.data_folder,epoch,'label'))
+        train_sampler = None
+        train_loader = torch.utils.data.DataLoader(train_dataset,
+                        batch_size=opt.batch_size,
+                        shuffle=(train_sampler is None),
+                        num_workers=opt.num_workers, pin_memory=True)
     for idx, (images, labels) in enumerate(train_loader):
         data_time.update(time.time() - end)
         images = torch.cat([images[0], images[1]], dim=0)
