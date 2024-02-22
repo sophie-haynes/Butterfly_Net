@@ -290,7 +290,7 @@ def set_model(opt):
             model.encoder = torch.nn.DataParallel(model.encoder)
         model = model.cuda()
         criterion = criterion.cuda()
-        cudnn.benchmark = True
+        # cudnn.benchmark = True
     elif torch.backends.mps.is_available():
         mps_device = torch.device("mps")
         model = model.to(mps_device)
