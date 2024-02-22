@@ -326,8 +326,14 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
 
     # load in current epoch data
     if opt.tensor:
-        train_dataset = TensorData(os.path.join(opt.data_folder,str(epoch),'img'),
-                        os.path.join(opt.data_folder,str(epoch),'label'))
+        # loop loader over the 30 prepared augmented epochs
+        loading_epoch = epoch
+        while loading_epoch>30:
+            loading_epoch-=30
+
+        train_dataset = TensorData(os.path.join(opt.data_folder,str(loading_epoch),'img'),
+                        os.path.join(opt.data_folder,str(loading_epoch),'label'))
+
         train_sampler = None
         train_loader = torch.utils.data.DataLoader(train_dataset,
                         batch_size=opt.batch_size,
