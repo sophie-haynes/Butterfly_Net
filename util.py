@@ -2,8 +2,10 @@ from __future__ import print_function
 
 import math
 import numpy as np
+import os
 import torch
 import torch.optim as optim
+from torch.utils.data import Dataset
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.tensorboard.summary import hparams
 
@@ -94,6 +96,29 @@ def save_model(model, optimizer, opt, epoch, save_file):
     }
     torch.save(state, save_file)
     del state
+
+# tensor loader class
+class TensorData(Dataset):
+  def __init__(self, img, img_label):
+    self.img = img  #img path
+    self.label = img_label  #mask path
+    self.len = len(os.listdir(self.img))
+
+  def __getitem__(self, index):
+    ls_img = sorted(os.listdir(self.img))
+    ls_label = sorted(os.listdir(self.label))
+
+    img_file_path = os.path.join(self.img, ls_img[index])
+    img_tensor = torch.load(img_file_path)
+
+    label_file_path = os.path.join(self.label, ls_label[index])
+    label_tensor = torch.load(label_file_path)
+
+    return img_tensor, label_tensor
+
+  def __len__(self):
+    return self.len
+
 
 # custom writer to make hparams and scalars appear in same run in tensorboard
 class SummaryWriter(SummaryWriter):

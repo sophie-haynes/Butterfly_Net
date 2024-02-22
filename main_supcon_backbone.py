@@ -12,7 +12,7 @@ import torch.backends.cudnn as cudnn
 from torchvision import transforms, datasets
 from torchvision.transforms import v2
 
-from util import TwoCropTransform, AverageMeter
+from util import TwoCropTransform, AverageMeter, TensorData
 from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
 from util import crop_dict, lung_seg_dict, arch_seg_dict
@@ -60,7 +60,7 @@ def parse_option():
     parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
     parser.add_argument('--std', type=str, help='std of dataset in path in form of str tuple')
     parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
-
+    parser.add_argument('--tensor', action='store_true', help='Loading augmented tensors instead of images')
     parser.add_argument('--size', type=int, default=224, help='parameter for RandomResizedCrop')
 
     # method
@@ -97,7 +97,6 @@ def parse_option():
         assert opt.data_folder is not None \
             and opt.mean is not None \
             and opt.std is not None
-
     # if running CXR experiment, make sure processing is specified
     try:
         if (opt.dataset == 'cxr14' or opt.dataset == 'jsrt' or opt.dataset == 'padchest' or opt.dataset == 'openi'):
@@ -172,75 +171,86 @@ def set_loader(opt):
         std = eval(opt.std)
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
-    normalize = transforms.Normalize(mean=mean, std=std)
-    v2Normalise = v2.Normalize(mean=mean, std=std)
 
-    cifar_train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomApply([
-            transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
-        ], p=0.8),
-        transforms.RandomGrayscale(p=0.2),
-        transforms.ToTensor(),
-        normalize,
-    ])
-    if opt.bbox:
-        # custom dataset
-        # RandomIoUCrop
-        raise NotImplementedError("BBox support is not yet implemented!")
+    if opt.tensor:
+        train_dataset = TensorData(os.path.join(opt.data_folder,'img'),
+                        os.path.join(opt.data_folder,'img'))
+        train_sampler = None
+        train_loader = torch.utils.data.DataLoader(train_dataset,
+                        batch_size=opt.batch_size,
+                        shuffle=(train_sampler is None),
+                        num_workers=opt.num_workers, pin_memory=True)
     else:
-        cxr_v2_train_transform = v2.Compose([
-            v2.ToImage(),
-            # added since RandomGrayscale was removed
-            v2.RandomRotation(15),
-            v2.RandomHorizontalFlip(),
-            v2.RandomApply([
-                # reduced saturation and contrast - prevent too much info loss + removed hue
-                v2.ColorJitter(0.4, 0.2, 0.2,0)
-            ], p=0.8),
-            # moved after transforms to preserve resolution, reduced scale to increase likelihood of indicator presence
-            v2.RandomResizedCrop(size=opt.size, scale=(0.6, 1.),antialias=None),
-            # required for normalisation
-            v2.ToDtype(torch.float32, scale=True),
-            v2Normalise
-        ])
 
-        cxr_train_transform = transforms.Compose([
-            transforms.RandomRotation(15),
+        normalize = transforms.Normalize(mean=mean, std=std)
+        v2Normalise = v2.Normalize(mean=mean, std=std)
+
+        cifar_train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
             transforms.RandomHorizontalFlip(),
             transforms.RandomApply([
-                transforms.ColorJitter(0.4, 0.2, 0.2,0)
+                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
             ], p=0.8),
-            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.), antialias=None),
+            transforms.RandomGrayscale(p=0.2),
             transforms.ToTensor(),
             normalize,
         ])
-
-    if opt.dataset == 'cifar10':
-        train_dataset = datasets.CIFAR10(root=opt.data_folder,
-                                         transform=TwoCropTransform(cifar_train_transform),
-                                         download=True)
-    elif opt.dataset == 'cifar100':
-        train_dataset = datasets.CIFAR100(root=opt.data_folder,
-                                          transform=TwoCropTransform(cifar_train_transform),
-                                          download=True)
-    elif opt.dataset == 'cxr14':
         if opt.bbox:
+            # custom dataset
+            # RandomIoUCrop
             raise NotImplementedError("BBox support is not yet implemented!")
         else:
-            train_dataset = datasets.ImageFolder(root=opt.data_folder,
-                                                transform=TwoCropTransform(cxr_v2_train_transform))
-    elif opt.dataset == 'path':
-        train_dataset = datasets.ImageFolder(root=opt.data_folder,
-                                            transform=TwoCropTransform(train_transform))
-    else:
-        raise ValueError(opt.dataset)
+            cxr_v2_train_transform = v2.Compose([
+                v2.ToImage(),
+                # added since RandomGrayscale was removed
+                v2.RandomRotation(15),
+                v2.RandomHorizontalFlip(),
+                v2.RandomApply([
+                    # reduced saturation and contrast - prevent too much info loss + removed hue
+                    v2.ColorJitter(0.4, 0.2, 0.2,0)
+                ], p=0.8),
+                # moved after transforms to preserve resolution, reduced scale to increase likelihood of indicator presence
+                v2.RandomResizedCrop(size=opt.size, scale=(0.6, 1.),antialias=None),
+                # required for normalisation
+                v2.ToDtype(torch.float32, scale=True),
+                v2Normalise
+            ])
 
-    train_sampler = None
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=opt.batch_size, shuffle=(train_sampler is None),
-        num_workers=opt.num_workers, pin_memory=True, sampler=train_sampler)
+            cxr_train_transform = transforms.Compose([
+                transforms.RandomRotation(15),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomApply([
+                    transforms.ColorJitter(0.4, 0.2, 0.2,0)
+                ], p=0.8),
+                transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.), antialias=None),
+                transforms.ToTensor(),
+                normalize,
+            ])
+
+        if opt.dataset == 'cifar10':
+            train_dataset = datasets.CIFAR10(root=opt.data_folder,
+                                             transform=TwoCropTransform(cifar_train_transform),
+                                             download=True)
+        elif opt.dataset == 'cifar100':
+            train_dataset = datasets.CIFAR100(root=opt.data_folder,
+                                              transform=TwoCropTransform(cifar_train_transform),
+                                              download=True)
+        elif opt.dataset == 'cxr14':
+            if opt.bbox:
+                raise NotImplementedError("BBox support is not yet implemented!")
+            else:
+                train_dataset = datasets.ImageFolder(root=opt.data_folder,
+                                                    transform=TwoCropTransform(cxr_v2_train_transform))
+        elif opt.dataset == 'path':
+            train_dataset = datasets.ImageFolder(root=opt.data_folder,
+                                                transform=TwoCropTransform(train_transform))
+        else:
+            raise ValueError(opt.dataset)
+
+        train_sampler = None
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=opt.batch_size, shuffle=(train_sampler is None),
+            num_workers=opt.num_workers, pin_memory=True, sampler=train_sampler)
 
     return train_loader
 
