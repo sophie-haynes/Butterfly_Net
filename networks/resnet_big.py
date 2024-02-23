@@ -328,7 +328,7 @@ class SupCEResNet(nn.Module):
 class SupCEResNetW1(nn.Module):
     """backbone + projection head"""
     def __init__(self, name='resnet50', rand_init=False,frozen=False,half=False):
-        super(SupConResNetW1, self).__init__()
+        super(SupCEResNetW1, self).__init__()
         if rand_init:
             print('Random Initialised Network!')
             model_fun = torchvision.models.resnet50()
