@@ -327,7 +327,7 @@ class SupCEResNet(nn.Module):
 
 class SupCEResNetW1(nn.Module):
     """backbone + projection head"""
-    def __init__(self, name='resnet50', rand_init=False,frozen=False,half=False):
+    def __init__(self, name='resnet50', num_classes=2, rand_init=False,frozen=False,half=False):
         super(SupCEResNetW1, self).__init__()
         if rand_init:
             print('Random Initialised Network!')
