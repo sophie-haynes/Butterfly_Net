@@ -324,21 +324,6 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
     else:
         metal_flag = False
 
-    # load in current epoch data
-    if opt.tensor:
-        # loop loader over the 30 prepared augmented epochs
-        loading_epoch = epoch
-        while loading_epoch>30:
-            loading_epoch-=30
-
-        train_dataset = TensorData(os.path.join(opt.data_folder,str(loading_epoch),'img'),
-                        os.path.join(opt.data_folder,str(loading_epoch),'label'))
-
-        train_sampler = None
-        train_loader = torch.utils.data.DataLoader(train_dataset,
-                        batch_size=opt.batch_size,
-                        shuffle=(train_sampler is None),
-                        num_workers=opt.num_workers, pin_memory=True)
     for idx, (images, labels) in enumerate(train_loader):
         data_time.update(time.time() - end)
         images = torch.cat([images[0], images[1]], dim=0)
@@ -412,9 +397,24 @@ def main():
 
     # training routine
     for epoch in range(1, opt.epochs + 1):
+
         print("Epoch {}\n".format(epoch))
         adjust_learning_rate(opt, optimizer, epoch)
+        # load in current epoch data
+        if opt.tensor:
+            # loop loader over the 30 prepared augmented epochs
+            loading_epoch = epoch
+            while loading_epoch>30:
+                loading_epoch-=30
 
+            train_dataset = TensorData(os.path.join(opt.data_folder,str(loading_epoch),'img'),
+                            os.path.join(opt.data_folder,str(loading_epoch),'label'))
+
+            train_sampler = None
+            train_loader = torch.utils.data.DataLoader(train_dataset,
+                            batch_size=opt.batch_size,
+                            shuffle=(train_sampler is None),
+                            num_workers=opt.num_workers, pin_memory=True)
         # train for one epoch
         time1 = time.time()
         loss = train(train_loader, model, criterion, optimizer, epoch, opt)
