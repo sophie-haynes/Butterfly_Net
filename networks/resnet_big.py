@@ -327,7 +327,7 @@ class SupCEResNet(nn.Module):
 
 class SupCEResNetW1(nn.Module):
     """backbone + projection head"""
-    def __init__(self, name='resnet50', num_classes=2, rand_init=False,frozen=False,half=False,grey=False):
+    def __init__(self, name='resnet50', num_classes=2, rand_init=False,frozen=False,half=False,grey=None):
         super(SupCEResNetW1, self).__init__()
         if rand_init:
             print('Random Initialised Network!')
@@ -336,7 +336,12 @@ class SupCEResNetW1(nn.Module):
             if grey:
                 print('Greyscale ImageNet Transfer Network')
                 model_fun = torchvision.models.resnet50()
-                weights = torch.load("/content/drive/MyDrive/Data_Processing/Grey_ImageNet/model_75.pth", map_location='cpu')
+                weights = torch.load(grey, map_location='cpu')
+                new_state_dict = {}
+                for k, v in weights['model'].items():
+                    k = k.replace("module.", "")
+                    new_state_dict[k] = v
+                model_fun.load_state_dict(new_state_dict)
             else:
                 print('ImageNetV1 Transfer Network!')
                 model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
