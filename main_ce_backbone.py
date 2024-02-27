@@ -56,9 +56,14 @@ def parse_option():
 
     # model dataset
     parser.add_argument('--model', type=str, default='resnet50')
-    parser.add_argument('--dataset', type=str, choices=['cxr14','jsrt','padchest','openi'], help='dataset')
-    parser.add_argument('--cxr_proc', type=str,choices=['crop', 'lung_seg','arch_seg'],help='CXR processing method applied')
+    parser.add_argument('--dataset', type=str, default='cifar10',
+                        choices=['cifar10', 'cifar100', 'cxr14','jsrt','padchest','openi','path'], help='dataset')
+    parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
+    parser.add_argument('--std', type=str, help='std of dataset in path in form of str tuple')
+    parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
+    parser.add_argument('--tensor', action='store_true', help='Loading augmented tensors instead of images')
     parser.add_argument('--size', type=int, default=224, help='parameter for RandomResizedCrop')
+    parser.add_argument('--n_cls', type=int, default=2, help='Number of Classes to Predict')
 
     # other setting
     parser.add_argument('--cosine', action='store_true',
@@ -69,28 +74,47 @@ def parse_option():
                         help='warm-up for large batch training')
     parser.add_argument('--trial', type=str, default='0',
                         help='id for recording multiple runs')
+
+    # other setting
     parser.add_argument('--seed', type=int, default=3, help='seed')
+    parser.add_argument('--weight_version', type=str, default="v1", choices = ["v1", "v2"], help='ImageNet weights version to use')
+    parser.add_argument('--cxr_proc', type=str,choices=['crop', 'lung_seg','arch_seg'],help='CXR processing method applied')
+    parser.add_argument('--fully_frozen', action='store_true',help="Freeze backbone and use as feature extractor")
+    parser.add_argument('--half_frozen', action='store_true',help="Freeze half the backbone tune later layers")
     parser.add_argument('--save_out', type=str, default=None, help='path to save to')
 
     opt = parser.parse_args()
+
+    # check if dataset is path that passed required arguments
+    if opt.dataset == 'path':
+        assert opt.data_folder is not None \
+            and opt.mean is not None \
+            and opt.std is not None
+    # if running CXR experiment, make sure processing is specified
+    try:
+        if (opt.dataset == 'cxr14' or opt.dataset == 'jsrt' or opt.dataset == 'padchest' or opt.dataset == 'openi'):
+            assert opt.cxr_proc == "crop" or opt.cxr_proc == "lung_seg" or opt.cxr_proc == "arch_seg";
+    except AssertionError as e:
+        print("CXR pre-processing not specified! Ensure you select 'crop', 'lung_seg' or 'arch_seg' when running on CXR images.")
+
 
     if opt.data_folder is None:
         opt.data_folder = './datasets/'
 
     # set the path according to the environment
     if opt.save_out is None:
-        opt.model_path = './save/SupCon/CE/{}_models'.format(opt.dataset)
-        opt.tb_path = './save/SupCon/CE/{}_tensorboard'.format(opt.dataset)
+        opt.model_path = './save/CrossEnt/{}_models'.format(opt.dataset)
+        opt.tb_path = './save/CrossEnt/CE/{}_tensorboard'.format(opt.dataset)
     else:
-        opt.model_path = '{}/CE/{}_models'.format(opt.save_out,opt.dataset)
-        opt.tb_path = '{}/CE/{}_tensorboard'.format(opt.save_out,opt.dataset)
+        opt.model_path = '{}/{}_models'.format(opt.save_out,opt.dataset)
+        opt.tb_path = '{}/{}_tensorboard'.format(opt.save_out,opt.dataset)
 
     iterations = opt.lr_decay_epochs.split(',')
     opt.lr_decay_epochs = list([])
     for it in iterations:
         opt.lr_decay_epochs.append(int(it))
 
-    opt.model_name = 'SupCE_{}_{}_lr_{}_decay_{}_bsz_{}_trial_{}'.\
+    opt.model_name = 'CE_{}_{}_lr_{}_decay_{}_bsz_{}_trial_{}'.\
         format(opt.dataset, opt.model, opt.learning_rate, opt.weight_decay,
                opt.batch_size, opt.trial)
 
@@ -120,11 +144,6 @@ def parse_option():
     if not os.path.isdir(opt.save_folder):
         os.makedirs(opt.save_folder)
 
-    if (opt.dataset == 'cxr14' or opt.dataset == 'jsrt' or opt.dataset == 'padchest' or opt.dataset == 'openi'):
-        opt.n_cls = 2
-    else:
-        raise ValueError('dataset not supported: {}'.format(opt.dataset))
-
     return opt
 
 
@@ -133,55 +152,86 @@ def set_loader(opt):
     :returns: train_loader, val_loader, external_dict{loaders}
     """
     # construct data loader
-    if opt.cxr_proc == "crop":
+    if opt.dataset == 'cifar10':
+        mean = (0.4914, 0.4822, 0.4465)
+        std = (0.2023, 0.1994, 0.2010)
+    elif opt.dataset == 'cifar100':
+        mean = (0.5071, 0.4867, 0.4408)
+        std = (0.2675, 0.2565, 0.2761)
+    elif opt.cxr_proc == "crop":
         mean, std = crop_dict[opt.dataset]
     elif opt.cxr_proc == "lung_seg":
         mean, std = lung_seg_dict[opt.dataset]
     elif opt.cxr_proc == "arch_seg":
         mean, std = arch_seg_dict[opt.dataset]
+    elif opt.dataset == 'path':
+        mean = eval(opt.mean)
+        std = eval(opt.std)
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
-    normalize = transforms.Normalize(mean=mean, std=std)
-    v2Normalise = v2.Normalize(mean=mean, std=std)
 
-    #TODO: transforms to be modified so pairs have same augmentation
-    # ====== CXR TRANSFORMS
-    if opt.bbox:
-        # custom dataset
-        # RandomIoUCrop
-        raise NotImplementedError("BBox support is not yet implemented!")
+
+    if opt.tensor:
+        train_dataset = TensorData(os.path.join(opt.data_folder,"1",'img'),
+                        os.path.join(opt.data_folder,"1",'label'))
+        train_sampler = None
+        train_loader = torch.utils.data.DataLoader(train_dataset,
+                        batch_size=opt.batch_size,
+                        shuffle=(train_sampler is None),
+                        num_workers=opt.num_workers, pin_memory=True)
     else:
-        cxr_v2_train_transform = v2.Compose([
-            v2.ToImage(),
-            # added since RandomGrayscale was removed
-            v2.RandomRotation(15),
-            v2.RandomHorizontalFlip(),
-            v2.RandomApply([
-                # reduced saturation and contrast - prevent too much info loss + removed hue
-                v2.ColorJitter(0.4, 0.2, 0.2,0)
-            ], p=0.8),
-            # moved after transforms to preserve resolution, reduced scale to increase likelihood of indicator presence
-            v2.RandomResizedCrop(size=opt.size, scale=(0.6, 1.)),
-            # required for normalisation
-            v2.ToDtype(torch.float32, scale=True),
-            v2Normalise
-        ])
+        normalize = transforms.Normalize(mean=mean, std=std)
+        v2Normalise = v2.Normalize(mean=mean, std=std)
 
-        cxr_v2_val_transform = v2.Compose([
-            v2.ToImage(),
-            # required for normalisation
-            v2.ToDtype(torch.float32, scale=True),
-            v2Normalise
-        ])
+        #TODO: transforms to be modified so pairs have same augmentation
+        # ====== CXR TRANSFORMS
+        if opt.bbox:
+            # custom dataset
+            # RandomIoUCrop
+            raise NotImplementedError("BBox support is not yet implemented!")
+        else:
+            cxr_v2_train_transform = v2.Compose([
+                v2.ToImage(),
+                # added since RandomGrayscale was removed
+                v2.RandomRotation(15),
+                v2.RandomHorizontalFlip(),
+                v2.RandomApply([
+                    # reduced saturation and contrast - prevent too much info loss + removed hue
+                    v2.ColorJitter(0.4, 0.2, 0.2,0)
+                ], p=0.8),
+                # moved after transforms to preserve resolution, reduced scale to increase likelihood of indicator presence
+                v2.RandomResizedCrop(size=opt.size, scale=(0.6, 1.)),
+                # required for normalisation
+                v2.ToDtype(torch.float32, scale=True),
+                v2Normalise
+            ])
 
-    train_dataset = datasets.ImageFolder(root=os.path.join(opt.data_folder,"train"),
+            cxr_v2_val_transform = v2.Compose([
+                v2.ToImage(),
+                # required for normalisation
+                v2.ToDtype(torch.float32, scale=True),
+                v2Normalise
+            ])
+    if opt.dataset == 'cifar10':
+        train_dataset = datasets.CIFAR10(root=opt.data_folder,
+                                         transform=TwoCropTransform(cifar_train_transform),
+                                         download=True)
+    elif opt.dataset == 'cifar100':
+        train_dataset = datasets.CIFAR100(root=opt.data_folder,
+                                          transform=TwoCropTransform(cifar_train_transform),
+                                          download=True)
+    elif opt.cxr_proc is not None:
+
+        train_dataset = datasets.ImageFolder(root=os.path.join(opt.data_folder,"train"),
                                      transform=cxr_v2_train_transform)
-    val_dataset = datasets.ImageFolder(root=os.path.join(opt.data_folder,"test"),
+        val_dataset = datasets.ImageFolder(root=os.path.join(opt.data_folder,"test"),
                                    transform=cxr_v2_val_transform)
-    external_loaders = {}
+        external_loaders = {}
 
-    ext_names = ['cxr14','padchest','openi','jsrt']
-    ext_names.remove(opt.dataset)
+        ext_names = ['cxr14','padchest','openi','jsrt']
+        ext_names.remove(opt.dataset)
+    else:
+        raise ValueError('dataset not supported: {}'.format(opt.dataset))
 
     train_sampler = None
     print("train loader... {}".format(os.path.join(opt.data_folder,"train")))
@@ -225,7 +275,7 @@ def set_model(opt):
             model = torch.nn.DataParallel(model)
         model = model.cuda()
         criterion = criterion.cuda()
-        cudnn.benchmark = True
+        # cudnn.benchmark = True
     # Metal GPU Loading
     elif torch.backends.mps.is_available():
         mps_device = torch.device("mps")
