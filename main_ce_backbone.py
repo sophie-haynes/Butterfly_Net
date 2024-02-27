@@ -61,7 +61,7 @@ def parse_option():
     parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
     parser.add_argument('--std', type=str, help='std of dataset in path in form of str tuple')
     parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
-    parser.add_argument('--tensor', action='store_true', help='Loading augmented tensors instead of images')
+    parser.add_argument('--tensor_path', type=str, default=None, help='Path to load augmented tensors instead of images')
     parser.add_argument('--size', type=int, default=224, help='parameter for RandomResizedCrop')
     parser.add_argument('--n_cls', type=int, default=2, help='Number of Classes to Predict')
 
@@ -78,10 +78,11 @@ def parse_option():
     # other setting
     parser.add_argument('--seed', type=int, default=3, help='seed')
     parser.add_argument('--weight_version', type=str, default="v1", choices = ["v1", "v2"], help='ImageNet weights version to use')
+    parser.add_argument('--grey_path', type=str, default=None,help='Path to load greyscale model')
     parser.add_argument('--cxr_proc', type=str,choices=['crop', 'lung_seg','arch_seg'],help='CXR processing method applied')
-    parser.add_argument('--fully_frozen', action='store_true',help="Freeze backbone and use as feature extractor")
-    parser.add_argument('--half_frozen', action='store_true',help="Freeze half the backbone tune later layers")
-    parser.add_argument('--save_out', type=str, default=None, help='path to save to')
+    parser.add_argument('--fully_frozen', action='store_true',default=False, help="Freeze backbone and use as feature extractor")
+    parser.add_argument('--half_frozen', action='store_true', default=False,help="Freeze half the backbone tune later layers")
+    parser.add_argument('--save_out', type=str, default=None, help='path to save model to')
 
     opt = parser.parse_args()
 
@@ -171,9 +172,9 @@ def set_loader(opt):
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
 
 
-    if opt.tensor:
-        train_dataset = TensorData(os.path.join(opt.data_folder,"1",'img'),
-                        os.path.join(opt.data_folder,"1",'label'))
+    if opt.tensor_path:
+        train_dataset = TensorData(os.path.join(opt.tensor_path,"1",'img'),
+                        os.path.join(opt.tensor_path,"1",'label'))
         train_sampler = None
         train_loader = torch.utils.data.DataLoader(train_dataset,
                         batch_size=opt.batch_size,
@@ -260,7 +261,7 @@ def set_loader(opt):
 
 def set_model(opt):
     if opt.model == "resnet50":
-        model = SupCEResNetW1(name=opt.model, num_classes=opt.n_cls)
+        model = SupCEResNetW1(name=opt.model, num_classes=opt.n_cls, frozen=opt.fully_frozen, half=opt.half_frozen grey=opt.grey_path)
     else:
         raise NotImplementedError("Only ResNet50 is currently supported!")
 
@@ -305,6 +306,8 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
     # load to GPU if available
     for idx, (images, labels) in enumerate(train_loader):
         data_time.update(time.time() - end)
+        if opt.tensor_path:
+            images = torch.cat([images[0], images[1]], dim=0)
         if metal_flag:
             images = images.to(mps_device)
             labels = labels.to(mps_device)
@@ -318,12 +321,21 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
 
         # compute loss
         output = model(images)
-        loss = criterion(output, labels)
+        if opt.tensor_path:
+            f1, f2 = torch.split(output, [bsz, bsz], dim=0)
+            output = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
+            loss = criterion(features, torch.cat([labels,labels],dim=1))
+            acc1 = accuracy(f1, labels)
+            top1.update(acc1[0], bsz)
+            acc2 = accuracy(f2, labels)
+            top1.update(acc2[0], bsz)
+        else:
+            loss = criterion(output, labels)
+            acc1 = accuracy(output, labels)
+            top1.update(acc1[0], bsz)
 
-        # update metric
         losses.update(loss.item(), bsz)
-        acc1 = accuracy(output, labels)
-        top1.update(acc1[0], bsz)
+
 
         # SGD
         optimizer.zero_grad()
@@ -340,7 +352,7 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
                   'BT {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'loss {loss.val:.3f} ({loss.avg:.3f})\t'
-                  'Acc {top1.val:.3f} ({top1.avg:.3f})'.format(
+                  'Acc {top1.val[0]:.3f} ({top1.avg[0]:.3f})'.format(
                    epoch, idx + 1, len(train_loader), batch_time=batch_time,
                    data_time=data_time, loss=losses, top1=top1))
             sys.stdout.flush()
@@ -348,56 +360,56 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
     return losses.avg, top1.avg
 
 
-def validate(val_loader, model, criterion, opt):
-    """validation"""
-    model.eval()
-
-    batch_time = AverageMeter()
-    losses = AverageMeter()
-    top1 = AverageMeter()
-
-    with torch.no_grad():
-        end = time.time()
-        # check for metal  GPU
-        if torch.backends.mps.is_available():
-            mps_device = torch.device("mps")
-            metal_flag = True
-        else:
-            metal_flag = False
-
-        # load to GPU
-        for idx, (images, labels) in enumerate(val_loader):
-            if metal_flag:
-                images = images.float().to(mps_device)
-                labels = labels.to(mps_device)
-            else:
-                images = images.float().cuda()
-                labels = labels.cuda()
-            bsz = labels.shape[0]
-
-            # forward
-            output = model(images)
-            loss = criterion(output, labels)
-
-            # update metric
-            losses.update(loss.item(), bsz)
-            acc1 = accuracy(output, labels)
-            top1.update(acc1[0], bsz)
-
-            # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
-
-            if idx % opt.print_freq == 0:
-                print('Test: [{0}/{1}]\t'
-                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                      'Acc {top1.val:.3f} ({top1.avg:.3f})'.format(
-                       idx, len(val_loader), batch_time=batch_time,
-                       loss=losses, top1=top1))
-
-    print(' * Acc {top1.avg:.3f}'.format(top1=top1))
-    return losses.avg, top1.avg
+# def validate(val_loader, model, criterion, opt):
+#     """validation"""
+#     model.eval()
+#
+#     batch_time = AverageMeter()
+#     losses = AverageMeter()
+#     top1 = AverageMeter()
+#
+#     with torch.no_grad():
+#         end = time.time()
+#         # check for metal  GPU
+#         if torch.backends.mps.is_available():
+#             mps_device = torch.device("mps")
+#             metal_flag = True
+#         else:
+#             metal_flag = False
+#
+#         # load to GPU
+#         for idx, (images, labels) in enumerate(val_loader):
+#             if metal_flag:
+#                 images = images.float().to(mps_device)
+#                 labels = labels.to(mps_device)
+#             else:
+#                 images = images.float().cuda()
+#                 labels = labels.cuda()
+#             bsz = labels.shape[0]
+#
+#             # forward
+#             output = model(images)
+#             loss = criterion(output, labels)
+#
+#             # update metric
+#             losses.update(loss.item(), bsz)
+#             acc1 = accuracy(output, labels)
+#             top1.update(acc1[0], bsz)
+#
+#             # measure elapsed time
+#             batch_time.update(time.time() - end)
+#             end = time.time()
+#
+#             if idx % opt.print_freq == 0:
+#                 print('Test: [{0}/{1}]\t'
+#                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+#                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+#                       'Acc {top1.val:.3f} ({top1.avg:.3f})'.format(
+#                        idx, len(val_loader), batch_time=batch_time,
+#                        loss=losses, top1=top1))
+#
+#     print(' * Acc {top1.avg:.3f}'.format(top1=top1))
+#     return losses.avg, top1.avg
 
 
 def main():
@@ -422,11 +434,21 @@ def main():
     # logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
     logger = SummaryWriter(opt.tb_folder)
     # training routine
+    curr_epoch = 1
     for epoch in range(1, opt.epochs + 1):
+        if curr_epoch >30:
+            curr_epoch -=30
         adjust_learning_rate(opt, optimizer, epoch)
 
         # train for one epoch
         time1 = time.time()
+        train_dataset = TensorData(os.path.join(opt.tensor_path,curr_epoch,'img'),
+                        os.path.join(opt.tensor_path,curr_epoch,'label'))
+        train_loader = torch.utils.data.DataLoader(train_dataset,
+                        batch_size=opt.batch_size,
+                        shuffle=True,
+                        num_workers=opt.num_workers, pin_memory=True)
+
         loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, opt)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))

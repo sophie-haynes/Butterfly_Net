@@ -327,12 +327,9 @@ class SupCEResNet(nn.Module):
 
 class SupCEResNetW1(nn.Module):
     """backbone + projection head"""
-    def __init__(self, name='resnet50', num_classes=2, rand_init=False,frozen=False,half=False,grey=None):
+    def __init__(self, name='resnet50', num_classes=2,frozen=False,half=False,grey=None):
         super(SupCEResNetW1, self).__init__()
-        if rand_init:
-            print('Random Initialised Network!')
-            model_fun = torchvision.models.resnet50()
-        else:
+        if frozen or half:
             if grey:
                 print('Greyscale ImageNet Transfer Network')
                 model_fun = torchvision.models.resnet50()
@@ -356,6 +353,9 @@ class SupCEResNetW1(nn.Module):
                         # freeze first half of network
                         param.requires_grad=False
                     i+=1
+        else:
+            print('Random Initialised Network!')
+            model_fun = torchvision.models.resnet50()
         dim_in = model_fun.fc.in_features
         # remove existing head
         model_fun.fc = nn.Identity()
