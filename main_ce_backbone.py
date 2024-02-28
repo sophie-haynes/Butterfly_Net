@@ -319,7 +319,7 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
         if opt.tensor_path:
             f1, f2 = torch.split(output, [bsz, bsz], dim = 0)
             output = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim = 1)
-            loss = criterion(output, torch.cat([labels,labels],dim = 1))
+            loss = criterion(output,labels)
             acc1 = accuracy(f1, labels)
             top1.update(acc1[0], bsz)
             acc2 = accuracy(f2, labels)
@@ -389,7 +389,7 @@ def validate(val_loader, model, criterion, opt):
                 output = model(images)
                 f1, f2 = torch.split(output, [bsz, bsz], dim = 0)
                 output = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim = 1)
-                loss = criterion(output, torch.cat([labels,labels],dim = 1))
+                loss = criterion(output, labels)
                 acc1 = accuracy(f1, labels)
                 top1.update(acc1[0], bsz)
                 acc2 = accuracy(f2, labels)
