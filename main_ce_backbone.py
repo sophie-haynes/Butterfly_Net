@@ -465,13 +465,11 @@ def main():
 
 
         if opt.tensor_path:
+            val_pth = opt.tensor_path.replace("train_loader","test_loader")
+            print("val path: {}".format(val_pth))
             val_dataset = TensorData(\
-                            os.path.join(\
-                                opt.tensor_path.replace(\
-                                    "train_loader","test_loader"),'img'),
-                            os.path.join(\
-                                opt.tensor_path.replace(\
-                                    "train_loader","test_loader"),'label'))
+                            os.path.join(val_pth,'img'),
+                            os.path.join(val_pth,'label'))
             val_loader = torch.utils.data.DataLoader(val_dataset,
                             batch_size = opt.batch_size,
                             shuffle = True,
