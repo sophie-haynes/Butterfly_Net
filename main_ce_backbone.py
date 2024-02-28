@@ -385,8 +385,8 @@ def validate(val_loader, model, criterion, opt):
             bsz = labels.shape[0]
 
             # forward
-            output = model(images)
             if opt.tensor_path:
+                output = model(images[None,:, :, :])
                 f1, f2 = torch.split(output, [bsz, bsz], dim = 0)
                 output = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim = 1)
                 loss = criterion(output, torch.cat([labels,labels],dim = 1))
@@ -395,6 +395,7 @@ def validate(val_loader, model, criterion, opt):
                 acc2 = accuracy(f2, labels)
                 top1.update(acc2[0], bsz)
             else:
+                output = model(images)
                 loss = criterion(output, labels)
                 acc1 = accuracy(output, labels)
                 top1.update(acc1[0], bsz)
