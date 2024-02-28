@@ -17,7 +17,7 @@ from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer, save_model
 from util import crop_dict, lung_seg_dict, arch_seg_dict
-from util import get_cxr_train_transforms, cifar_ce_transform_list
+from util import get_cxr_train_transforms, cifar_ce_transform_list, TensorData
 from networks.resnet_big import SupCEResNet,SupCEResNetW1
 
 try:
