@@ -378,18 +378,29 @@ def validate(val_loader, model, criterion, opt):
                 images = images.float().to(mps_device)
                 labels = labels.to(mps_device)
             else:
+                if opt.tensor_path:
+                    images = torch.cat([images[0], images[1]], dim = 0)
                 images = images.float().cuda()
                 labels = labels.cuda()
             bsz = labels.shape[0]
 
             # forward
             output = model(images)
-            loss = criterion(output, labels)
-
+            if opt.tensor_path:
+                f1, f2 = torch.split(output, [bsz, bsz], dim = 0)
+                output = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim = 1)
+                loss = criterion(output, torch.cat([labels,labels],dim = 1))
+                acc1 = accuracy(f1, labels)
+                top1.update(acc1[0], bsz)
+                acc2 = accuracy(f2, labels)
+                top1.update(acc2[0], bsz)
+            else:
+                loss = criterion(output, labels)
+                acc1 = accuracy(output, labels)
+                top1.update(acc1[0], bsz)
             # update metric
             losses.update(loss.item(), bsz)
-            acc1 = accuracy(output, labels)
-            top1.update(acc1[0], bsz)
+
 
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -399,7 +410,7 @@ def validate(val_loader, model, criterion, opt):
                 print('Test: [{0}/{1}]\t'
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                      'Acc {top1.val:.3f} ({top1.avg:.3f})'.format(
+                      'Acc {top1.val[0]:.3f} ({top1.avg[0]:.3f})'.format(
                        idx, len(val_loader), batch_time = batch_time,
                        loss = losses, top1 = top1))
 
@@ -466,7 +477,6 @@ def main():
 
         if opt.tensor_path:
             val_pth = opt.tensor_path.replace("train_loader","test_loader")
-            print("val path: {}".format(val_pth))
             val_dataset = TensorData(\
                             os.path.join(val_pth,'img'),
                             os.path.join(val_pth,'label'))
