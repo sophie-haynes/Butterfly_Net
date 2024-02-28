@@ -160,3 +160,47 @@ arch_seg_dict = {
     'jsrt': [[139.9666], [72.4017]],
     'padchest': [[129.5006], [72.6308]],
 }
+
+def get_cxr_train_transforms(crop_size,normalise):
+    cxr_transform_list = [
+        v2.ToImage(),
+        # added since RandomGrayscale was removed
+        v2.RandomRotation(15),
+        v2.RandomHorizontalFlip(),
+        v2.RandomApply([
+            # reduced saturation and contrast - prevent too much info loss + removed hue
+            v2.ColorJitter(0.4, 0.2, 0.2,0)
+        ], p=0.8),
+        # moved after transforms to preserve resolution, reduced scale to increase likelihood of indicator presence
+        v2.RandomResizedCrop(size=crop_size, scale=(0.6, 1.),antialias=True),
+        # required for normalisation
+        v2.ToDtype(torch.float32, scale=True),
+        normalise
+    ]
+    return cxr_transform_list
+
+def get_cxr_eval_transforms(crop_size,normalise):
+    cxr_transform_list = [
+        v2.ToImage(),
+        v2.Resize(size=crop_size,antialias=True),
+        v2.ToDtype(torch.float32, scale=True),
+        normalise
+    ]
+    return cxr_transform_list
+
+
+cifar_sc_transform_list = [
+    transforms.RandomResizedCrop(size=32, scale=(0.2, 1.)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomApply([
+        transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
+    ], p=0.8),
+    transforms.RandomGrayscale(p=0.2),
+    transforms.ToTensor(),
+]
+
+cifar_ce_transform_list = [
+    transforms.RandomResizedCrop(size=32, scale=(0.2, 1.)),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+]
