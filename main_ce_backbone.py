@@ -69,7 +69,7 @@ def parse_option():
                             help = 'Path to load augmented tensors')
     parser.add_argument('--size', type = int, default = 224, \
                             help = 'parameter for RandomResizedCrop')
-    parser.add_argument('--n_cls', type = int, default = 2, \
+    parser.add_argument('--n_cls', type = int, default = 1, \
                             help = 'Number of Classes to Predict')
 
     # other setting
@@ -386,7 +386,7 @@ def validate(val_loader, model, criterion, opt):
 
             # forward
             if opt.tensor_path:
-                output = model(images[None,:, :, :])
+                output = model(images)
                 f1, f2 = torch.split(output, [bsz, bsz], dim = 0)
                 output = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim = 1)
                 loss = criterion(output, torch.cat([labels,labels],dim = 1))

@@ -327,7 +327,7 @@ class SupCEResNet(nn.Module):
 
 class SupCEResNetW1(nn.Module):
     """backbone + projection head"""
-    def __init__(self, name='resnet50', num_classes=2,frozen=False,half=False,grey=None):
+    def __init__(self, name='resnet50', num_classes=1,frozen=False,half=False,grey=None):
         super(SupCEResNetW1, self).__init__()
         if frozen or half:
             if grey:
