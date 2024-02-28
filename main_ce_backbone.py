@@ -444,8 +444,8 @@ def main():
 
         if opt.tensor_path:
             train_dataset = TensorData(\
-                        os.path.join(opt.tensor_path,curr_epoch,'img'),
-                        os.path.join(opt.tensor_path,curr_epoch,'label'))
+                        os.path.join(opt.tensor_path,str(curr_epoch),'img'),
+                        os.path.join(opt.tensor_path,str(curr_epoch),'label'))
             train_loader = torch.utils.data.DataLoader(train_dataset,
                             batch_size = opt.batch_size, shuffle = True,
                             num_workers = opt.num_workers, pin_memory = True)
@@ -469,11 +469,11 @@ def main():
                             os.path.join(\
                                 opt.tensor_path.replace(\
                                     "train_loader","test_loader"),\
-                                curr_epoch,'img'),
+                                str(curr_epoch),'img'),
                             os.path.join(\
                                 opt.tensor_path.replace(\
                                     "train_loader","test_loader"),\
-                                curr_epoch,'label'))
+                                str(curr_epoch),'label'))
             val_loader = torch.utils.data.DataLoader(val_dataset,
                             batch_size = opt.batch_size,
                             shuffle = True,
@@ -491,8 +491,8 @@ def main():
             for ds_name in ext_names:
                 ext_pth = opt.tensor_path.replace("train_loader","test_loader")\
                                             .replace(opt.dataset,ds_name)
-                ext_dataset = TensorData(os.path.join(ext_pth,curr_epoch,'img'),
-                                            os.path.join(ext_pth,curr_epoch,\
+                ext_dataset = TensorData(os.path.join(ext_pth,str(curr_epoch),'img'),
+                                            os.path.join(ext_pth,str(curr_epoch),\
                                                             'label'))
                 ext_loader = torch.utils.data.DataLoader(ext_dataset,
                                 batch_size = opt.batch_size,
