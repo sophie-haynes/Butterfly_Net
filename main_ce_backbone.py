@@ -378,8 +378,8 @@ def validate(val_loader, model, criterion, opt):
                 images = images.float().to(mps_device)
                 labels = labels.to(mps_device)
             else:
-                # if opt.tensor_path:
-                #     images = torch.cat([images[0], images[1]], dim = 0)
+                if opt.tensor_path:
+                    images = torch.cat([images[0], images[1]], dim = 0)
                 images = images.float().cuda()
                 labels = labels.cuda()
             bsz = labels.shape[0]
