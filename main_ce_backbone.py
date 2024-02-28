@@ -256,7 +256,7 @@ def set_loader(opt):
 def set_model(opt):
     if opt.model == "resnet50":
         model = SupCEResNetW1(name = opt.model, num_classes = opt.n_cls, \
-        frozen = opt.fully_frozen, half = opt.half_frozen grey = opt.grey_path)
+        frozen = opt.fully_frozen, half = opt.half_frozen, grey = opt.grey_path)
     else:
         raise NotImplementedError("Only ResNet50 is currently supported!")
 
