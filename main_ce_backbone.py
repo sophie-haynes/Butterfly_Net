@@ -468,12 +468,10 @@ def main():
             val_dataset = TensorData(\
                             os.path.join(\
                                 opt.tensor_path.replace(\
-                                    "train_loader","test_loader"),\
-                                str(curr_epoch),'img'),
+                                    "train_loader","test_loader"),'img'),
                             os.path.join(\
                                 opt.tensor_path.replace(\
-                                    "train_loader","test_loader"),\
-                                str(curr_epoch),'label'))
+                                    "train_loader","test_loader"),'label'))
             val_loader = torch.utils.data.DataLoader(val_dataset,
                             batch_size = opt.batch_size,
                             shuffle = True,
@@ -491,9 +489,8 @@ def main():
             for ds_name in ext_names:
                 ext_pth = opt.tensor_path.replace("train_loader","test_loader")\
                                             .replace(opt.dataset,ds_name)
-                ext_dataset = TensorData(os.path.join(ext_pth,str(curr_epoch),'img'),
-                                            os.path.join(ext_pth,str(curr_epoch),\
-                                                            'label'))
+                ext_dataset = TensorData(os.path.join(ext_pth,'img'),
+                                            os.path.join(ext_pth, 'label'))
                 ext_loader = torch.utils.data.DataLoader(ext_dataset,
                                 batch_size = opt.batch_size,
                                 shuffle = True,
