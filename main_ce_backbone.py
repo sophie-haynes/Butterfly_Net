@@ -420,7 +420,7 @@ def main():
         # build data loader
         train_loader, val_loader, external_loaders = set_loader(opt)
     else:
-        ext_names = ['cxr14','padchest','openi','jsrt']
+        ext_names = ['cxr14','padchest','jsrt']
         ext_names.remove(opt.dataset)
 
     # build model and criterion
