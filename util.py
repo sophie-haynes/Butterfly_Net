@@ -8,6 +8,8 @@ import torch.optim as optim
 from torch.utils.data import Dataset
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.tensorboard.summary import hparams
+from torchvision import transforms
+from torchvision.transforms import v2
 
 class TwoCropTransform:
     """Create two crops of the same image"""
