@@ -86,12 +86,13 @@ def parse_option():
     # seed for reproducibility
     parser.add_argument('--seed', type=int, default=3, help='seed')
     parser.add_argument('--weight_version', type=str, default="v1", choices = ["v1", "v2"], help='ImageNet weights version to use')
-    parser.add_argument('--rand_weights', action='store_true', help='Randomly initialised weights')
     parser.add_argument('--bbox', type=str, default=None, help='path to bounding box annnotations')
     parser.add_argument('--cxr_proc', type=str,choices=['crop', 'lung_seg','arch_seg'],help='CXR processing method applied')
     parser.add_argument('--fully_frozen', action='store_true',help="Freeze backbone and use as feature extractor")
     parser.add_argument('--half_frozen', action='store_true',help="Freeze half the backbone tune later layers")
     parser.add_argument('--save_out', type=str, default=None, help='path to save to')
+
+    parser.add_argument('--feat_dim', type=int, default=128, help="Dimension for projection network output")
     opt = parser.parse_args()
 
     # check if dataset is path that passed required arguments
@@ -225,18 +226,14 @@ def set_model(opt):
         if opt.weight_version == "v2":
             model = SupConResNetW2(name=opt.model)
         elif opt.weight_version == "v1":
-            if opt.rand_weights:
-                model = SupConResNetW1(name=opt.model,rand_init=opt.rand_weights)
-                opt.model_name = "rand_"+opt.model_name
+            if opt.fully_frozen:
+                opt.model_name = "FF_"+opt.model_name
+            elif opt.half_frozen:
+                opt.model_name = "HF_"+opt.model_name
             else:
-                if opt.fully_frozen:
-                    opt.model_name = "FF_"+opt.model_name
-                elif opt.half_frozen:
-                    opt.model_name = "HF_"+opt.model_name
-                else:
-                    opt.model_name = "FN_"+opt.model_name
+                opt.model_name = "FN_"+opt.model_name
 
-                model = SupConResNetW1(name=opt.model, frozen=opt.fully_frozen,half=opt.half_frozen)
+            model = SupConResNetW1(name=opt.model,feat_dim=opt.feat_dim, frozen=opt.fully_frozen,half=opt.half_frozen,grey = opt.grey_path)
 
         else:
             raise ValueError("Weight version provided is not available")
