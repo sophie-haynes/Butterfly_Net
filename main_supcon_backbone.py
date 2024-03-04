@@ -63,6 +63,8 @@ def parse_option():
     parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
     parser.add_argument('--tensor_path', type = str, default = None, \
                             help = 'Path to load augmented tensors')
+    parser.add_argument('--grey_path', type = str, default = None, \
+                        help = 'Path to load greyscale model')
     parser.add_argument('--size', type=int, default=224, help='parameter for RandomResizedCrop')
 
     # method
