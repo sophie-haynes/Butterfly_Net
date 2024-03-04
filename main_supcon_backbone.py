@@ -347,8 +347,9 @@ def main():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    # build data loader
-    train_loader = set_loader(opt)
+    if not opt.tensor_path:
+        # build data loader
+        train_loader = set_loader(opt)
 
     # build model and criterion
     model, criterion = set_model(opt)
