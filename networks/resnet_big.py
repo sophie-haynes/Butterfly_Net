@@ -217,24 +217,38 @@ class SupConResNetW2(nn.Module):
 
 class SupConResNetW1(nn.Module):
     """backbone + projection head"""
-    def __init__(self, name='resnet50', head='mlp', feat_dim=128, rand_init=False,frozen=False,half=False):
+    def __init__(self, name='resnet50', head='mlp', feat_dim=128, rand_init=False,frozen=False,half=False,grey=None):
         super(SupConResNetW1, self).__init__()
         if rand_init:
             print('Random Initialised Network!')
             model_fun = torchvision.models.resnet50()
         else:
-            print('ImageNetV1 Transfer Network!')
-            model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
-            if frozen:
-                for param in model_fun.parameters():
-                    # freeze layers
+            if grey:
+                print('Greyscale ImageNet Transfer Network')
+                model_fun = torchvision.models.resnet50()
+                weights = torch.load(grey, map_location='cpu')
+                new_state_dict = {}
+                for k, v in weights['model'].items():
+                    k = k.replace("module.", "")
+                    new_state_dict[k] = v
+                model_fun.load_state_dict(new_state_dict)
+            else:
+                print('ImageNetV1 Transfer Network!')
+                model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
+        if frozen:
+            for param in model_fun.parameters():
+                # freeze layers
+                param.requires_grad=False
+        elif half:
+            i = 1
+            for param in model_fun.parameters():
+                if i<=64:
+                    # freeze first half of network
                     param.requires_grad=False
-            elif half:
-                i = 1
-                for param in model_fun.parameters():
-                    if i<=64:
-                        # freeze first half of network
-                        param.requires_grad=False
+        else:
+            for param in model_fun.parameters():
+                # Ensure all layers are trainable
+                param.requires_grad=True
         dim_in = model_fun.fc.in_features
         # remove existing head
         model_fun.fc = nn.Identity()
@@ -329,33 +343,39 @@ class SupCEResNetW1(nn.Module):
     """backbone + projection head"""
     def __init__(self, name='resnet50', num_classes=1,frozen=False,half=False,grey=None):
         super(SupCEResNetW1, self).__init__()
-        if frozen or half:
-            if grey:
-                print('Greyscale ImageNet Transfer Network')
-                model_fun = torchvision.models.resnet50()
-                weights = torch.load(grey, map_location='cpu')
-                new_state_dict = {}
-                for k, v in weights['model'].items():
-                    k = k.replace("module.", "")
-                    new_state_dict[k] = v
-                model_fun.load_state_dict(new_state_dict)
-            else:
-                print('ImageNetV1 Transfer Network!')
-                model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
-            if frozen:
-                for param in model_fun.parameters():
-                    # freeze layers
-                    param.requires_grad=False
-            elif half:
-                i = 1
-                for param in model_fun.parameters():
-                    if i<=64:
-                        # freeze first half of network
-                        param.requires_grad=False
-                    i+=1
-        else:
-            print('Random Initialised Network!')
+        # if frozen or half:
+        if grey:
+            print('Greyscale ImageNet Transfer Network')
             model_fun = torchvision.models.resnet50()
+            weights = torch.load(grey, map_location='cpu')
+            new_state_dict = {}
+            for k, v in weights['model'].items():
+                k = k.replace("module.", "")
+                new_state_dict[k] = v
+            model_fun.load_state_dict(new_state_dict)
+        else:
+            print('ImageNetV1 Transfer Network!')
+            model_fun = torchvision.models.resnet50(weights="IMAGENET1K_V1")
+        if frozen:
+            print("Freezing all layers...")
+            for param in model_fun.parameters():
+                # freeze layers
+                param.requires_grad=False
+        elif half:
+            print("Freezing half the Network...")
+            i = 1
+            for param in model_fun.parameters():
+                if i<=64:
+                    # freeze first half of network
+                    param.requires_grad=False
+                i+=1
+        else:
+            for param in model_fun.parameters():
+                # Ensure all layers are trainable
+                param.requires_grad=True
+        # else:
+        #     print('Random Initialised Network!')
+        #     model_fun = torchvision.models.resnet50()
         dim_in = model_fun.fc.in_features
         # remove existing head
         model_fun.fc = nn.Identity()
