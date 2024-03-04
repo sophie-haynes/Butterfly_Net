@@ -16,6 +16,7 @@ from util import TwoCropTransform, AverageMeter, TensorData
 from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
 from util import crop_dict, lung_seg_dict, arch_seg_dict
+from util import get_cxr_train_transforms, cifar_sc_transform_list
 
 from networks.resnet_big import SupConResNetW1,SupConResNetW2, SupConDenseNetW1,SupConSwinV2TW1
 from losses import SupConLoss
@@ -60,7 +61,8 @@ def parse_option():
     parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
     parser.add_argument('--std', type=str, help='std of dataset in path in form of str tuple')
     parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
-    parser.add_argument('--tensor', action='store_true', help='Loading augmented tensors instead of images')
+    parser.add_argument('--tensor_path', type = str, default = None, \
+                            help = 'Path to load augmented tensors')
     parser.add_argument('--size', type=int, default=224, help='parameter for RandomResizedCrop')
 
     # method
@@ -172,85 +174,48 @@ def set_loader(opt):
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
 
-    if opt.tensor:
-        train_dataset = TensorData(os.path.join(opt.data_folder,"1",'img'),
-                        os.path.join(opt.data_folder,"1",'label'))
-        train_sampler = None
-        train_loader = torch.utils.data.DataLoader(train_dataset,
-                        batch_size=opt.batch_size,
-                        shuffle=(train_sampler is None),
-                        num_workers=opt.num_workers, pin_memory=True)
+    normalize = transforms.Normalize(mean=mean, std=std)
+    v2Normalise = v2.Normalize(mean=mean, std=std)
+
+    if opt.dataset == 'cifar10':
+        cifar_sc_transform_list.append(normalize)
+        train_dataset = datasets.CIFAR10(root = opt.data_folder,
+                                         transform = TwoCropTransform(\
+                                            transforms.Compose(\
+                                                cifar_sc_transform_list)),
+                                         download=True)
+    elif opt.dataset == 'cifar100':
+        cifar_sc_transform_list.append(normalize)
+        train_dataset = datasets.CIFAR100(root = opt.data_folder,
+                                          transform = TwoCropTransform(\
+                                            transforms.Compose(\
+                                                cifar_sc_transform_list)),
+                                          download=True)
+    elif opt.cxr_proc is not None:
+        if not opt.tensor_path:
+            cxr_v2_train_transform = v2.Compose(\
+                get_cxr_train_transforms(opt.size,v2Normalise))
+            cxr_v2_val_transform = v2.Compose(\
+                get_cxr_train_transforms(opt.size,v2Normalise))
+
+            train_dataset = datasets.ImageFolder(\
+                            root = os.path.join(opt.data_folder,"train"),
+                            transform = cxr_v2_train_transform)
+            val_dataset = datasets.ImageFolder(\
+                            root = os.path.join(opt.data_folder,"test"),
+                            transform = cxr_v2_val_transform)
+            external_loaders = {}
+
+        ext_names = ['cxr14','padchest','openi','jsrt']
+        ext_names.remove(opt.dataset)
     else:
+        raise ValueError('dataset not currently supported: {}'.format(opt.dataset))
 
-        normalize = transforms.Normalize(mean=mean, std=std)
-        v2Normalise = v2.Normalize(mean=mean, std=std)
+    train_sampler = None
 
-        cifar_train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomApply([
-                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
-            ], p=0.8),
-            transforms.RandomGrayscale(p=0.2),
-            transforms.ToTensor(),
-            normalize,
-        ])
-        if opt.bbox:
-            # custom dataset
-            # RandomIoUCrop
-            raise NotImplementedError("BBox support is not yet implemented!")
-        else:
-            cxr_v2_train_transform = v2.Compose([
-                v2.ToImage(),
-                # added since RandomGrayscale was removed
-                v2.RandomRotation(15),
-                v2.RandomHorizontalFlip(),
-                v2.RandomApply([
-                    # reduced saturation and contrast - prevent too much info loss + removed hue
-                    v2.ColorJitter(0.4, 0.2, 0.2,0)
-                ], p=0.8),
-                # moved after transforms to preserve resolution, reduced scale to increase likelihood of indicator presence
-                v2.RandomResizedCrop(size=opt.size, scale=(0.6, 1.),antialias=None),
-                # required for normalisation
-                v2.ToDtype(torch.float32, scale=True),
-                v2Normalise
-            ])
-
-            cxr_train_transform = transforms.Compose([
-                transforms.RandomRotation(15),
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomApply([
-                    transforms.ColorJitter(0.4, 0.2, 0.2,0)
-                ], p=0.8),
-                transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.), antialias=None),
-                transforms.ToTensor(),
-                normalize,
-            ])
-
-        if opt.dataset == 'cifar10':
-            train_dataset = datasets.CIFAR10(root=opt.data_folder,
-                                             transform=TwoCropTransform(cifar_train_transform),
-                                             download=True)
-        elif opt.dataset == 'cifar100':
-            train_dataset = datasets.CIFAR100(root=opt.data_folder,
-                                              transform=TwoCropTransform(cifar_train_transform),
-                                              download=True)
-        elif opt.dataset == 'cxr14':
-            if opt.bbox:
-                raise NotImplementedError("BBox support is not yet implemented!")
-            else:
-                train_dataset = datasets.ImageFolder(root=opt.data_folder,
-                                                    transform=TwoCropTransform(cxr_v2_train_transform))
-        elif opt.dataset == 'path':
-            train_dataset = datasets.ImageFolder(root=opt.data_folder,
-                                                transform=TwoCropTransform(train_transform))
-        else:
-            raise ValueError(opt.dataset)
-
-        train_sampler = None
-        train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=opt.batch_size, shuffle=(train_sampler is None),
-            num_workers=opt.num_workers, pin_memory=True, sampler=train_sampler)
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=opt.batch_size, shuffle=(train_sampler is None),
+        num_workers=opt.num_workers, pin_memory=True, sampler=train_sampler)
 
     return train_loader
 
@@ -396,25 +361,22 @@ def main():
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
 
     # training routine
+    curr_epoch = 1
     for epoch in range(1, opt.epochs + 1):
-
+        # tracking for tensor loading
+        if curr_epoch > 30:
+            curr_epoch -= 30
         print("Epoch {}\n".format(epoch))
         adjust_learning_rate(opt, optimizer, epoch)
         # load in current epoch data
-        if opt.tensor:
-            # loop loader over the 30 prepared augmented epochs
-            loading_epoch = epoch
-            while loading_epoch>30:
-                loading_epoch-=30
-
-            train_dataset = TensorData(os.path.join(opt.data_folder,str(loading_epoch),'img'),
-                            os.path.join(opt.data_folder,str(loading_epoch),'label'))
-
-            train_sampler = None
+        if opt.tensor_path:
+            train_dataset = TensorData(\
+                        os.path.join(opt.tensor_path,str(curr_epoch),'img'),
+                        os.path.join(opt.tensor_path,str(curr_epoch),'label'))
             train_loader = torch.utils.data.DataLoader(train_dataset,
-                            batch_size=opt.batch_size,
-                            shuffle=(train_sampler is None),
-                            num_workers=opt.num_workers, pin_memory=True)
+                            batch_size = opt.batch_size, shuffle = True,
+                            num_workers = opt.num_workers, pin_memory = True)
+
         # train for one epoch
         time1 = time.time()
         loss = train(train_loader, model, criterion, optimizer, epoch, opt)
@@ -429,7 +391,7 @@ def main():
             save_file = os.path.join(
                 opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
             save_model(model, optimizer, opt, epoch, save_file)
-
+        curr_epoch += 1
     # save the last model
     save_file = os.path.join(
         opt.save_folder, 'last.pth')

@@ -518,6 +518,7 @@ def main():
             save_file = os.path.join(
                 opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch = epoch))
             save_model(model, optimizer, opt, epoch, save_file)
+        curr_epoch += 1
 
     # save the last model
     save_file = os.path.join(
