@@ -37,6 +37,21 @@ except ImportError:
     pass
 
 
+def ddp_setup(rank, world_size):
+    """
+    Method to initialise a GPU "group" to allow for mutual communication
+    between the GPUs.
+    :param rank: Unique id for each process.
+    :param world_size: Total number of processes in the group.
+    """
+    # IP Address of the head node/machine running process with rank 0
+    # NOTE: "localhost" only works on single-node instances, needs set on cluster!
+    os.environ["MASTER_ADDR"] = "localhost"
+    # Any free port on head node
+    os.environ["MASTER_PORT"] = "12355"
+    # initialise GPU group - nccl is nvidia CUDA distribution backend
+    init_process_group(backend="nccl", rank=rank, world_size=world_size)
+
 def parse_option():
     parser = argparse.ArgumentParser('argument for training')
 
