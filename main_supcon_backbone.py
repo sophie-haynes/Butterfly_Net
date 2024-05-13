@@ -202,10 +202,10 @@ def set_loader(opt):
                 get_cxr_train_transforms(opt.size,v2Normalise))
 
             train_dataset = datasets.ImageFolder(\
-                            root = os.path.join(opt.data_folder,"train"),
+                            root = os.path.join(opt.data_folder,opt.cxr_proc,("flat_std_1024" if opt.cxr_proc=="arch_seg" else "std_1024"),"train"),
                             transform = cxr_v2_train_transform)
             val_dataset = datasets.ImageFolder(\
-                            root = os.path.join(opt.data_folder,"test"),
+                            root = os.path.join(opt.data_folder,opt.cxr_proc,("flat_std_1024" if opt.cxr_proc=="arch_seg" else "std_1024"),"test"),
                             transform = cxr_v2_val_transform)
             external_loaders = {}
 
