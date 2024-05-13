@@ -18,7 +18,7 @@ from networks.resnet_big import SupConResNet
 from losses import SupConLoss
 
 from util import crop_dict, lung_seg_dict, arch_seg_dict
-from util import get_cxr_train_transforms
+from util import get_cxr_train_transforms,get_cxr_eval_transforms
 from torchvision.transforms import v2
 
 try:
@@ -93,7 +93,10 @@ def parse_option():
     if opt.dataset == 'path':
         assert opt.data_folder is not None \
             and opt.mean is not None \
-            and opt.std is not None
+            and opt.std is not None \
+            and (opt.cxr_proc == "crop" \
+                or opt.cxr_proc == "lung_seg" \
+                or opt.cxr_proc == "arch_seg")
 
     # set the path according to the environment
     if opt.data_folder is None:
@@ -164,21 +167,26 @@ def set_loader(opt):
     train_transform = v2.Compose(\
         get_cxr_train_transforms(opt.size,v2Normalise))
     val_transform = v2.Compose(\
-        get_cxr_train_transforms(opt.size,v2Normalise))
+        get_cxr_eval_transforms(opt.size,v2Normalise))
 
     if opt.dataset == 'cxr14' or opt.dataset == 'padchest':
         train_dataset = datasets.ImageFolder(\
-                        root = os.path.join(opt.data_folder,"train"),
-                        transform = cxr_v2_train_transform)
+                        root = os.path.join(opt.data_folder,opt.cxr_proc,"train"),
+                        transform = train_transform)
+        val_dataset = datasets.ImageFolder(\
+                        root = os.path.join(opt.data_folder,opt.cxr_proc,"test"),
+                        transform = val_transform)
+
+        external_loaders = {}
+        ext_names = ['cxr14','padchest','openi','jsrt']
+        ext_names.remove(opt.dataset)
     elif opt.dataset == 'path':
         train_dataset = datasets.ImageFolder(root=opt.data_folder,
                                             transform=TwoCropTransform(train_transform))
         val_dataset = datasets.ImageFolder(\
                         root = os.path.join(opt.data_folder,"test"),
-                        transform = cxr_v2_val_transform)
-        external_loaders = {}
-        ext_names = ['cxr14','padchest','openi','jsrt']
-        ext_names.remove(opt.dataset)
+                        transform = TwoCropTransform)
+
     else:
         raise ValueError(opt.dataset)
 
