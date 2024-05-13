@@ -206,3 +206,13 @@ cifar_ce_transform_list = [
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
 ]
+
+cxr_sc_transform_list = [
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomApply([
+        transforms.ColorJitter(0.4, 0.2, 0.2,0)
+    ], p=0.8),
+    transforms.RandomRotation(15),
+    transforms.RandomResizedCrop(size=224, scale=(0.6, 1.)),
+    transforms.ToTensor(),
+]
