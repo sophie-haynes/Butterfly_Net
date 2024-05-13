@@ -163,7 +163,8 @@ def set_loader(opt):
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
     normalize = transforms.Normalize(mean=mean, std=std)
-
+    v2Normalise = v2.Normalize(mean=mean, std=std)
+    
     train_transform = v2.Compose(\
         get_cxr_train_transforms(opt.size,v2Normalise))
     val_transform = v2.Compose(\
