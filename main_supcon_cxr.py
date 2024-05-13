@@ -172,10 +172,10 @@ def set_loader(opt):
 
     if opt.dataset == 'cxr14' or opt.dataset == 'padchest':
         train_dataset = datasets.ImageFolder(\
-                        root = os.path.join(opt.data_folder,("flat_std_1024" if cxr_proc=="arch_seg" else "std_1024"),opt.cxr_proc,"train"),
+                        root = os.path.join(opt.data_folder,("flat_std_1024" if opt.cxr_proc=="arch_seg" else "std_1024"),opt.cxr_proc,"train"),
                         transform = train_transform)
         val_dataset = datasets.ImageFolder(\
-                        root = os.path.join(opt.data_folder,("flat_std_1024" if cxr_proc=="arch_seg" else "std_1024"),opt.cxr_proc,"test"),
+                        root = os.path.join(opt.data_folder,("flat_std_1024" if opt.cxr_proc=="arch_seg" else "std_1024"),opt.cxr_proc,"test"),
                         transform = val_transform)
 
         external_loaders = {}
