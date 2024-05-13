@@ -18,7 +18,7 @@ from networks.resnet_big import SupConResNet
 from losses import SupConLoss
 
 from util import crop_dict, lung_seg_dict, arch_seg_dict
-from util import get_cxr_train_transforms,get_cxr_eval_transforms
+from util import get_cxr_train_transforms,get_cxr_eval_transforms,cxr_sc_transform_list
 from torchvision.transforms import v2
 
 try:
@@ -171,12 +171,13 @@ def set_loader(opt):
         get_cxr_eval_transforms(opt.size,v2Normalise))
 
     if opt.dataset == 'cxr14' or opt.dataset == 'padchest':
+        cxr_sc_transform_list.append(normalize)
         train_dataset = datasets.ImageFolder(\
                         root = os.path.join(opt.data_folder,opt.cxr_proc,("flat_std_1024" if opt.cxr_proc=="arch_seg" else "std_1024"),"train"),
-                        transform = train_transform)
-        val_dataset = datasets.ImageFolder(\
-                        root = os.path.join(opt.data_folder,opt.cxr_proc,("flat_std_1024" if opt.cxr_proc=="arch_seg" else "std_1024"),"test"),
-                        transform = val_transform)
+                        transform = TwoCropTransform(cxr_sc_transform_list))#train_transform)
+        # val_dataset = datasets.ImageFolder(\
+        #                 root = os.path.join(opt.data_folder,opt.cxr_proc,("flat_std_1024" if opt.cxr_proc=="arch_seg" else "std_1024"),"test"),
+        #                 transform = val_transform)
 
         external_loaders = {}
         ext_names = ['cxr14','padchest','openi','jsrt']
