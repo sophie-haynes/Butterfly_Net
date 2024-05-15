@@ -250,20 +250,22 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
         # warm-up learning rate
         warmup_learning_rate(opt, epoch, idx, len(train_loader), optimizer)
 
-        # compute loss
-        features = model(images)
-        f1, f2 = torch.split(features, [bsz, bsz], dim=0)
-        features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
-        if opt.method == 'SupCon':
-            loss = criterion(features, labels)
-        elif opt.method == 'SimCLR':
-            loss = criterion(features)
-        else:
-            raise ValueError('contrastive method not supported: {}'.
+        # AMP 
+        with torch.autocast(device_type="cuda"):
+            # compute loss
+            features = model(images)
+            f1, f2 = torch.split(features, [bsz, bsz], dim=0)
+            features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
+            if opt.method == 'SupCon':
+                loss = criterion(features, labels)
+            elif opt.method == 'SimCLR':
+                loss = criterion(features)
+            else:
+                raise ValueError('contrastive method not supported: {}'.
                              format(opt.method))
 
-        # update metric
-        losses.update(loss.item(), bsz)
+            # update metric
+            losses.update(loss.item(), bsz)
 
         # SGD
         optimizer.zero_grad()
