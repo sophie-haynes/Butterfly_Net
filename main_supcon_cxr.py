@@ -174,7 +174,9 @@ def set_loader(opt):
         cxr_sc_transform_list.append(normalize)
         train_dataset = datasets.ImageFolder(\
                         root = os.path.join(opt.data_folder,opt.cxr_proc,("flat_std_1024" if opt.cxr_proc=="arch_seg" else "std_1024"),"train"),
-                        transform = TwoCropTransform(transforms.Compose(cxr_sc_transform_list)))#train_transform)
+                        transform = TwoCropTransform(train_transform))
+                                    #TwoCropTransform(transforms.Compose(cxr_sc_transform_list)))
+                                    #train_transform)
         # val_dataset = datasets.ImageFolder(\
         #                 root = os.path.join(opt.data_folder,opt.cxr_proc,("flat_std_1024" if opt.cxr_proc=="arch_seg" else "std_1024"),"test"),
         #                 transform = val_transform)
